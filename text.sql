@@ -53,14 +53,47 @@ alter table bankTransaction add column destinationAccount varchar(10) not null;
 alter table bankTransaction add foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade;
 /*End create and modify database*/
 
-/*Task 1: Create account*/
+/*Start Task 1: Create account* - Lợi/
+
+/*End Task 1: Create account* - Lợi/
+
+
+/*Start Task 2: Update account* - Vũ/
+
+/*End Task 2: Update account* - Vũ/
 
 
 
-/*Task 2: Update account*/
-/*Task 3: Ưithdraw money*/
-/*Task 4: Transfer money*/
-/*Task 5: Check balance*/
-/*Task 6: Create account*/
-/*Task 7: Create account*/
-/*Task 8: Create account*/
+/*Start Task 3: Ưithdraw money* - Lợi/
+
+/*End Task 3: Ưithdraw money* - Lợi/
+
+
+
+/*Start Task 4: Transfer money* - Vũ/
+
+/*End Task 4: Transfer money* - Vũ/
+
+
+
+/*Start Task 5: Check balance* - Lợi/
+
+/*End Task 5: Check balance* - Lợi/
+
+
+
+/*Start Task 6: Check transaction* - Vũ/
+
+/*End Task 6: Check transaction* - Vũ/
+
+
+
+/*Start Task 7: Deposit money into an account * - Lợi/
+
+/*End Task 7: Deposit money into an account * - Lợi/
+
+
+
+/*Start Task 8: Delete account* - Vũ/
+
+/*Start Task 8: Delete account* - Vũ/
