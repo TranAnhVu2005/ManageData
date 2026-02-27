@@ -2,10 +2,11 @@ create database MANAGEBANKACCOUNT;
 use MANAGEBANKACCOUNT;
 
 /*Start create and modify database*/
-create table USERBANK(
+create table USERACCOUNTS (
 	userID varchar(10) primary key,
     userName varchar(200) not null,
     ID char(12) not null unique,
+    passWordHash varchar(200) not null,
     birthDay date not null,
     numberPhone varchar(15) not null unique,
     email varchar(100) not null unique
@@ -15,16 +16,16 @@ create table USERBANK(
 create table ACCOUNTBANK(
 	numberAccount varchar(10) primary key,
     userID varchar(10) not null,
-    passWordHash varchar(200) not null,
-    pinCodeHash char(64) not null,
+    pinCodeHash varchar(64) not null,
     balance decimal(15,2) not null default 0 check (balance >=0),
     state enum("Active", "Blocked") not null DEFAULT "Active",
     created_at datetime DEFAULT NOW(),
-    foreign key (userID) references USERBANK(userID) on update cascade on delete cascade
+    foreign key (userID) references USERACCOUNTS(userID) on update cascade on delete cascade
 );
 
-create table CARD (
+create table CARDS (
 	cardNumber char(16) primary key,
+    cardPinCodeHash varchar(64) not null,
     created_at date not null,
     expire_at date not null,
     secureCode char(3) not null,
@@ -38,7 +39,7 @@ create table TYPEOFTRANSACTION (
     description varchar(100) not null
 );
 
-create table bankTransaction(
+create table BANKTRANSACTIONS(
 	transactionId char(30) primary key,
     created_at datetime not null default current_timestamp,
     amount decimal(15,2) not null default 0 check (amount >=0),
@@ -49,13 +50,28 @@ create table bankTransaction(
     foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade
 );
 
-alter table bankTransaction add column destinationAccount varchar(10) not null;
-alter table bankTransaction add foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade;
+alter table BANKTRANSACTIONS add column destinationAccount varchar(10) not null;
+alter table BANKTRANSACTIONS add foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade;
 /*End create and modify database*/
 
-/*Start Task 1: Create account* - Lợi/
+/*Start Task 1: Create account* - Lợi*/
 
-/*End Task 1: Create account* - Lợi/
+delimiter $$
+create procedure createUserAccount (
+	IN p_userID varchar(10),
+	IN p_userName varchar(200),
+    IN p_ID char(12),
+    IN p_birthday date,
+    IN p_numberPhone varchar(15),
+    IN p_email varchar(100),
+    IN p_passwordHash varchar(2000)
+)
+begin
+	insert into useraccounts values (p_userID, p_userName, p_ID, p_birthday, p_numberPhone, p_email, p_passwordHash);
+end$$
+delimiter ;
+
+/*End Task 1: Create account* - Lợi*/
 
 
 /*Start Task 2: Update account* - Vũ*/
@@ -80,7 +96,7 @@ begin
     
     SELECT passwordHash INTO passwordHashOld FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
 	SELECT state INTO state FROM ACCOUNTBANK WHERE  numberAccount = p_numberAccount;
-    SELECT COUNT(*) INTO countUser FROM USERBANK WHERE userID = p_userID;
+    SELECT COUNT(*) INTO countUser FROM USERACCOUNTS WHERE userID = p_userID;
     
     IF countUser = 0;
 		set p_result = "Not found user"
@@ -89,7 +105,7 @@ begin
 	ELSE IF state != "Active"
 		set p_result = "This account blocked!"
 	ELSE 
-		UPDATE USERBANK SET
+		UPDATE USERACCOUNTS SET
 			userName = COALESCE(p_userName, userName),
             ID = COALESCE(p_ID, ID),
             birthDay = COALESCE(p_birthDay, birthDay),
@@ -101,9 +117,60 @@ delimiter ;
 
 /*End Task 2: Update account* - Vũ */
 
-
+delimiter $$
+create procedure withDrawMoney (
+	IN p_cardNumber char(16),
+    IN p_cardPinCodeHash varchar(64),
+    IN p_amount decimal(15, 2),
+    OUT p_result INT # 0: success, 1: no card number, 2: wrong pin, 3: not enough balance, 4: error by server
+)
+proc: begin
+	declare v_cardPinCodeHash varchar(64) default NULL;
+    declare v_numberAccount varchar(10);
+    declare v_balance decimal(15, 2);
+    
+    set p_result = 4;
+    
+    start transaction;
+    
+    select cardPinCodeHash, numberAccount
+    into v_cardPinCodeHash, v_numberAccount
+    from CARDS
+    where cardNumber = p_cardNumber
+    for update;
+    
+    if v_cardPinCodeHash is NULL then
+		set p_result = 1;
+        rollback;
+        leave proc;
+	end if;
+    
+    if v_cardPinCodeHash <> p_cardPinCodeHash then
+		set p_result = 2;
+        rollback;
+        leave proc;
+	end if;
+    
+    select balance
+    into v_balance
+    from ACCOUNTBANK
+    where numberAccount = v_numberAccount
+    for update;
+    
+    if v_balance < p_amount then
+		set p_result = 3;
+        rollback;
+        leave proc;
+	end if;
+    
+    update ACCOUNTBANK set balance = balance - p_amount where numberAccount = v_numberAccount;
+    commit;
+end$$
+delimiter ;
 
 /*Start Task 3: Ưithdraw money* - Lợi*/
+
+
 
 /*End Task 3: Ưithdraw money - Lợi*/
 
