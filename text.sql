@@ -58,27 +58,66 @@ alter table bankTransaction add foreign key  (destinationAccount) references acc
 /*End Task 1: Create account* - Lợi/
 
 
-/*Start Task 2: Update account* - Vũ/
+/*Start Task 2: Update account* - Vũ*/
+delimiter $$;
+create procedure updateInfo(
+	IN p_userID varchar(10),
+	IN p_userName varchar(200),
+    IN p_ID char(12),
+    IN p_birthDay date,
+    IN p_numberPhone varchar(15),
+    IN p_email varchar(100),
+    IN p_passwordHashOld varchar(200),
+    IN p_passwordHashNew varchar(200),
+    
+    IN p_numberAccount varchar(10),
+    OUT p_result varchar(200)
+)
+begin
+	declare passwordHashdOld varchar(200);
+    declare state varchar(10); 
+    declare countUser int;
+    
+    SELECT passwordHash INTO passwordHashOld FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
+	SELECT state INTO state FROM ACCOUNTBANK WHERE  numberAccount = p_numberAccount;
+    SELECT COUNT(*) INTO countUser FROM USERBANK WHERE userID = p_userID;
+    
+    IF countUser = 0;
+		set p_result = "Not found user"
+	ELSE IF p_passwordHashOld != passwordHash
+		set p_result = "Incorrect password"
+	ELSE IF state != "Active"
+		set p_result = "This account blocked!"
+	ELSE 
+		UPDATE USERBANK SET
+			userName = COALESCE(p_userName, userName),
+            ID = COALESCE(p_ID, ID),
+            birthDay = COALESCE(p_birthDay, birthDay),
+            numberPhone = COALESCE(p_numberPhone, numberPhone),
+            email = COALESCE(p_email, email),
+            passwordHash = COALESCE(p_passwordHashNew, passwordHash)
+end$$
+delimiter ;
 
-/*End Task 2: Update account* - Vũ/
+/*End Task 2: Update account* - Vũ */
 
 
 
-/*Start Task 3: Ưithdraw money* - Lợi/
+/*Start Task 3: Ưithdraw money* - Lợi*/
 
-/*End Task 3: Ưithdraw money* - Lợi/
-
-
-
-/*Start Task 4: Transfer money* - Vũ/
-
-/*End Task 4: Transfer money* - Vũ/
+/*End Task 3: Ưithdraw money - Lợi*/
 
 
 
-/*Start Task 5: Check balance* - Lợi/
+/*Start Task 4: Transfer money* - Vũ*/
 
-/*End Task 5: Check balance* - Lợi/
+/*End Task 4: Transfer money* - Vũ*/
+
+
+
+/*Start Task 5: Check balance* - Lợi*/
+
+/*End Task 5: Check balance* - Lợi*/
 
 
 
