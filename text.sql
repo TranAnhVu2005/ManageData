@@ -47,3 +47,6 @@ create table bankTransaction(
     foreign key (typeOfTransactionCode) references TYPEOFTRANSACTION(typeOfTransactionCode) on update cascade on delete cascade,
     foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade
 );
+
+alter table bankTransaction add column destinationAccount varchar(10) not null;
+alter table bankTransaction add foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade;
