@@ -75,7 +75,7 @@ delimiter ;
 
 
 /*Start Task 2: Update account* - Vũ*/
-delimiter $$;
+delimiter $$
 create procedure updateInfo(
 	IN p_userID varchar(10),
 	IN p_userName varchar(200),
@@ -90,33 +90,43 @@ create procedure updateInfo(
     OUT p_result varchar(200)
 )
 begin
-	declare passwordHashdOld varchar(200);
-    declare state varchar(10); 
-    declare countUser int;
+	declare v_passwordHashOld varchar(200);
+    declare v_state varchar(10); 
+    declare v_countUser int;
     
-    SELECT passwordHash INTO passwordHashOld FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
-	SELECT state INTO state FROM ACCOUNTBANK WHERE  numberAccount = p_numberAccount;
-    SELECT COUNT(*) INTO countUser FROM USERACCOUNTS WHERE userID = p_userID;
+    declare exit handler for sqlexception
+    begin
+		set p_result = "Error";
+    end;
     
-    IF countUser = 0;
-		set p_result = "Not found user"
-	ELSE IF p_passwordHashOld != passwordHash
-		set p_result = "Incorrect password"
-	ELSE IF state != "Active"
-		set p_result = "This account blocked!"
-	ELSE 
+    SELECT passWordHash INTO v_passwordHashOld FROM USERACCOUNTS WHERE userID = p_userID;
+	SELECT state INTO v_state FROM ACCOUNTBANK WHERE  numberAccount = p_numberAccount;
+    SELECT COUNT(*) INTO v_countUser FROM USERACCOUNTS WHERE userID = p_userID;
+    
+    IF v_countUser = 0 THEN
+		set p_result = "Not found user";
+	ELSEIF p_passwordHashOld != v_passwordHashOld THEN
+		set p_result = "Incorrect password";
+	ELSEIF v_state != "Active" THEN
+		set p_result = "This account blocked!";
+	ELSE
 		UPDATE USERACCOUNTS SET
 			userName = COALESCE(p_userName, userName),
             ID = COALESCE(p_ID, ID),
             birthDay = COALESCE(p_birthDay, birthDay),
             numberPhone = COALESCE(p_numberPhone, numberPhone),
             email = COALESCE(p_email, email),
-            passwordHash = COALESCE(p_passwordHashNew, passwordHash)
+            passWordHash = COALESCE(p_passwordHashNew, passWordHash)
+			WHERE userID = p_userID;
+		set p_result = "Success";
+	END IF;
 end$$
 delimiter ;
 
 /*End Task 2: Update account* - Vũ */
 
+
+/*Start Task 3: Withdraw money* - Lợi*/
 delimiter $$
 create procedure withDrawMoney (
 	IN p_cardNumber char(16),
@@ -167,12 +177,7 @@ proc: begin
     commit;
 end$$
 delimiter ;
-
-/*Start Task 3: Ưithdraw money* - Lợi*/
-
-
-
-/*End Task 3: Ưithdraw money - Lợi*/
+/*End Task 3: Withdraw money - Lợi*/
 
 
 
