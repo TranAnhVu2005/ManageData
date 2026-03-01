@@ -255,6 +255,64 @@ delimiter ;
 
 
 /*Start Task 4: Transfer money* - Vũ*/
+delimiter $$
+create procedure transferMoney(
+	in p_numberAccount varchar(10),
+	in p_destinationAccount varchar(10),
+	in p_pinCodeHash varchar(64),
+    in p_amount decimal(15,2),
+    out p_result varchar(200)
+)
+begin
+	declare v_pinCodeHash varchar(64);
+    declare v_balance decimal(15,2);
+    declare v_state enum("Active","Blocked");
+    declare v_state_des enum("Active","Blocked");
+    declare exit handler for sqlexception 
+    begin
+		rollback;
+        set p_result = "Error transaction";
+    end;
+    
+    select pinCodeHash, balance, state into v_pinCodeHash, v_balance, v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
+	select state into v_state_des from ACCOUNTBANK where numberAccount = p_destinationAccount;
+    IF v_state is null
+    THEN set p_result ="Not found account";
+    ELSEIF v_state_des is null
+    THEN set p_result ="Not found account destination";
+    ELSEIF v_state_des != "Active"
+    THEN set p_result = "The account destination is not active";
+    ELSEIF v_state!="Active"
+    THEN set p_result = "This account is blocked";
+    ELSEIF p_pinCodeHash != v_pinCodeHash
+		THEN set p_result = "Incorrect pin code";
+	ELSEIF p_amount > v_balance 
+		THEN set p_result = "Not enough balance";
+	ELSE
+		start transaction;
+			update ACCOUNTBANK set balance = balance - p_amount where numberAccount =  p_numberAccount;
+            update ACCOUNTBANK set balance = balance + p_amount where numberAccount =  p_destinationAccount;
+            insert into BANKTRANSACTIONS(
+					transactionID,
+                    amount, 
+                    stateOfTransaction, 
+                    typeofTransactionCode,
+                    numberAccount,
+                    destinationAccount
+            ) values
+            (
+				CONCAT("TRSF",DATE_FORMAT(NOW(),"%Y%m%d%H%i%s",FLOOR(RAND()*1000))),
+                p_amount,
+                "Success",
+                "TRSF",
+                p_numberAccount,
+                p_destinationAccount
+            );
+		commit;
+        set p_result = "Success";
+	END IF;
+end $$
+delimiter ;
 
 /*End Task 4: Transfer money* - Vũ*/
 
