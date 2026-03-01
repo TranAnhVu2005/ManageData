@@ -47,12 +47,14 @@ create table BANKTRANSACTIONS(
     stateOfTransaction enum("Processing", "Success", "Cancel") not null default "Processing",
     typeOfTransactionCode char(4) not null,
     numberAccount varchar(10) not null,
+    desinationAccount varchar(10),
     foreign key (typeOfTransactionCode) references TYPEOFTRANSACTION(typeOfTransactionCode) on update cascade on delete cascade,
-    foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade
+    foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade,
+    foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade
 );
 
-alter table BANKTRANSACTIONS add column destinationAccount varchar(10) not null;
-alter table BANKTRANSACTIONS add foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade;
+
+
 /*End create and modify database*/
 
 /*Create random code function */
@@ -148,16 +150,7 @@ delimiter ;
 
 /*End Task 2: Update account* - Vũ */
 
-create table BANKTRANSACTIONS(
-	transactionId char(30) primary key,
-    created_at datetime not null default current_timestamp,
-    amount decimal(15,2) not null default 0 check (amount >=0),
-    stateOfTransaction enum("Processing", "Success", "Cancel") not null default "Processing",
-    typeOfTransactionCode char(4) not null,
-    numberAccount varchar(10) not null,
-    foreign key (typeOfTransactionCode) references TYPEOFTRANSACTION(typeOfTransactionCode) on update cascade on delete cascade,
-    foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade
-);
+
 /*Start Task 3: Withdraw money* - Lợi*/
 delimiter $$
 create procedure withDrawMoney (
@@ -301,7 +294,7 @@ begin
                     destinationAccount
             ) values
             (
-				CONCAT("TRSF",DATE_FORMAT(NOW(),"%Y%m%d%H%i%s",FLOOR(RAND()*1000))),
+				CONCAT("TRSF",DATE_FORMAT(NOW(),"%Y%m%d%H%i%s"),FLOOR(RAND()*1000)),
                 p_amount,
                 "Success",
                 "TRSF",
@@ -367,9 +360,26 @@ delimiter ;
 
 
 
-/*Start Task 6: Check transaction* - Vũ/
-
-/*End Task 6: Check transaction* - Vũ/
+/*Start Task 6: Check transaction - Vũ*/
+delimiter $$
+create procedure checkTransaction(
+	in p_numberAccount varchar(10),
+    out p_result varchar(200)
+)
+begin
+	declare v_state enum("Active","Blocked");
+	select state into v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
+    IF v_state is null
+    THEN set p_result ="Not found account";
+    ELSEIF v_state!="Active"
+    THEN set p_result = "This account is blocked";
+	ELSE 
+		select * from BANKTRANSACTIONS where numberAccount = p_numberAccount or destinationAccount = p_numberAccount;
+        set p_result = "Success";
+	END IF;
+end $$
+delimiter ;
+/*End Task 6: Check transaction* - Vũ*/
 
 
 
@@ -467,5 +477,25 @@ delimiter ;
 
 
 /*Start Task 8: Delete account* - Vũ*/
-
+delimiter $$
+create procedure deleteAccount(
+	in p_numberAccount varchar(10),
+    out p_result varchar(200)
+)
+begin
+    declare v_state enum("Active","Blocked");
+	declare v_balance decimal(15,2);
+    select state, balance into v_state,v_balance from ACCOUNTBANK where numberAccount = p_numberAccount;
+    IF v_state is null
+    THEN set p_result ="Not found account";
+    ELSEIF v_state != "Active"
+    THEN set p_result = "This account is already blocked";
+    ELSEIF v_balance > 0 
+    THEN  set p_result = CONCAT("Balance is ",v_balance,".Please withdraw before deleting");
+	ELSE
+		update ACCOUNTBANK set state = "Blocked" where numberAccount = p_numberAccount;
+        set p_result = "Success";
+	END IF;
+end$$
+delimiter ;
 /*Start Task 8: Delete account* - Vũ*/
