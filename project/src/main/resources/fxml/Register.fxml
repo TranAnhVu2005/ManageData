@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<ScrollPane fitToWidth="true"
+    style="-fx-background: #f0f4f8;
+           -fx-background-color: #f0f4f8;">
+
+    <VBox spacing="0"
+        prefWidth="480"
+        style="-fx-background-color: #f0f4f8;">
+
+        <!-- HEADER -->
+        <HBox alignment="CENTER_LEFT" spacing="10"
+            style="-fx-background-color: white;
+                     -fx-padding: 16 24;
+                     -fx-border-color: #e2e8f0;
+                     -fx-border-width: 0 0 1 0;">
+            <Button text="← Quay lại"
+                style="-fx-background-color: transparent;
+                           -fx-text-fill: #3b9eff;
+                           -fx-font-size: 13px;
+                           -fx-cursor: hand;
+                           -fx-border-color: transparent;" />
+            <Label text="ĐĂNG KÝ TÀI KHOẢN"
+                style="-fx-font-size: 15px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: #1e293b;"
+                HBox.hgrow="ALWAYS" />
+        </HBox>
+
+        <!-- FORM -->
+        <VBox spacing="16"
+            style="-fx-background-color: white;
+                     -fx-padding: 28 32;">
+
+            <!-- Gợi ý -->
+            <Label text="📝  Vui lòng điền đầy đủ thông tin bên dưới"
+                style="-fx-font-size: 11px;
+                          -fx-text-fill: #64748b;
+                          -fx-padding: 8 12;
+                          -fx-background-color: #f0f9ff;
+                          -fx-background-radius: 6;
+                          -fx-border-color: #bae6fd;
+                          -fx-border-radius: 6;" />
+
+            <!-- Họ tên -->
+            <VBox spacing="6">
+                <Label text="HỌ VÀ TÊN"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <TextField promptText="Nhập họ và tên đầy đủ"
+                    prefHeight="44"
+                    style="-fx-background-color: #f8fafc;
+                                  -fx-border-color: #e2e8f0;
+                                  -fx-border-radius: 8;
+                                  -fx-background-radius: 8;
+                                  -fx-padding: 0 12;
+                                  -fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- CCCD -->
+            <VBox spacing="6">
+                <Label text="SỐ CCCD"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <TextField promptText="Nhập số CCCD (12 số)"
+                    prefHeight="44"
+                    style="-fx-background-color: #f8fafc;
+                                  -fx-border-color: #e2e8f0;
+                                  -fx-border-radius: 8;
+                                  -fx-background-radius: 8;
+                                  -fx-padding: 0 12;
+                                  -fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- Ngày sinh -->
+            <VBox spacing="6">
+                <Label text="NGÀY SINH"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <DatePicker promptText="Chọn ngày sinh"
+                    prefHeight="44"
+                    prefWidth="Infinity"
+                    style="-fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- Số điện thoại -->
+            <VBox spacing="6">
+                <Label text="SỐ ĐIỆN THOẠI"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <TextField promptText="Nhập số điện thoại (10 số)"
+                    prefHeight="44"
+                    style="-fx-background-color: #f8fafc;
+                                  -fx-border-color: #e2e8f0;
+                                  -fx-border-radius: 8;
+                                  -fx-background-radius: 8;
+                                  -fx-padding: 0 12;
+                                  -fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- Email -->
+            <VBox spacing="6">
+                <Label text="EMAIL"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <TextField promptText="Nhập địa chỉ email"
+                    prefHeight="44"
+                    style="-fx-background-color: #f8fafc;
+                                  -fx-border-color: #e2e8f0;
+                                  -fx-border-radius: 8;
+                                  -fx-background-radius: 8;
+                                  -fx-padding: 0 12;
+                                  -fx-font-size: 13px;" />
+            </VBox>
+
+            <Separator style="-fx-background-color: #e2e8f0;" />
+
+            <!-- Mật khẩu -->
+            <VBox spacing="6">
+                <Label text="MẬT KHẨU"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <PasswordField promptText="Tối thiểu 6 ký tự"
+                    prefHeight="44"
+                    style="-fx-background-color: #f8fafc;
+                                      -fx-border-color: #e2e8f0;
+                                      -fx-border-radius: 8;
+                                      -fx-background-radius: 8;
+                                      -fx-padding: 0 12;
+                                      -fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- Xác nhận mật khẩu -->
+            <VBox spacing="6">
+                <Label text="XÁC NHẬN MẬT KHẨU"
+                    style="-fx-font-size: 11px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #475569;" />
+                <PasswordField promptText="Nhập lại mật khẩu"
+                    prefHeight="44"
+                    style="-fx-background-color: #f8fafc;
+                                      -fx-border-color: #e2e8f0;
+                                      -fx-border-radius: 8;
+                                      -fx-background-radius: 8;
+                                      -fx-padding: 0 12;
+                                      -fx-font-size: 13px;" />
+            </VBox>
+
+            <!-- Nút đăng ký -->
+            <Button text="ĐĂNG KÝ"
+                prefWidth="Infinity"
+                prefHeight="50"
+                style="-fx-background-color: #3b9eff;
+                           -fx-text-fill: white;
+                           -fx-font-weight: bold;
+                           -fx-font-size: 14px;
+                           -fx-background-radius: 10;
+                           -fx-cursor: hand;" />
+
+            <!-- Link đăng nhập -->
+            <HBox alignment="CENTER" spacing="4">
+                <Label text="Đã có tài khoản?"
+                    style="-fx-font-size: 13px;
+                              -fx-text-fill: #64748b;" />
+                <Button text="Đăng nhập ngay"
+                    style="-fx-background-color: transparent;
+                               -fx-text-fill: #3b9eff;
+                               -fx-font-size: 13px;
+                               -fx-font-weight: bold;
+                               -fx-cursor: hand;
+                               -fx-border-color: transparent;" />
+            </HBox>
+
+        </VBox>
+
+        <!-- FOOTER -->
+        <HBox alignment="CENTER"
+            style="-fx-background-color: #f8fafc;
+                     -fx-padding: 16 0;
+                     -fx-border-color: #e2e8f0;
+                     -fx-border-width: 1 0 0 0;">
+            <Label text="© 2024 Bank Management System. All rights reserved."
+                style="-fx-font-size: 11px;
+                          -fx-text-fill: #94a3b8;" />
+        </HBox>
+
+    </VBox>
+</ScrollPane>

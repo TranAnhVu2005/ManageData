@@ -24,7 +24,7 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(
-                getClass().getResource("/fxml/Login.fxml"));
+                getClass().getResource("/fxml/UpdateInfo.fxml"));
 
         Scene scene = new Scene(root, 480, 600);
         stage.setTitle("BankManagement");

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<VBox spacing="0" prefWidth="480" prefHeight="600"
+    style="-fx-background-color: #f0f4f8;">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="10"
+        style="-fx-background-color: white;
+                 -fx-padding: 16 24;
+                 -fx-border-color: #e2e8f0;
+                 -fx-border-width: 0 0 1 0;">
+        <Button text="←"
+            style="-fx-background-color: transparent;
+                       -fx-text-fill: #3b9eff;
+                       -fx-font-size: 18px;
+                       -fx-cursor: hand;
+                       -fx-border-color: transparent;" />
+        <Label text="XÓA TÀI KHOẢN"
+            style="-fx-font-size: 15px;
+                      -fx-font-weight: bold;
+                      -fx-text-fill: #1e293b;"
+            HBox.hgrow="ALWAYS" />
+    </HBox>
+
+    <VBox spacing="20"
+        style="-fx-background-color: white;
+                 -fx-padding: 28 32;">
+
+        <!-- Cảnh báo -->
+        <VBox spacing="10" alignment="CENTER"
+            style="-fx-background-color: #fff7ed;
+                     -fx-border-color: #fed7aa;
+                     -fx-border-radius: 12;
+                     -fx-background-radius: 12;
+                     -fx-padding: 24;">
+            <Label text="⚠️"
+                style="-fx-font-size: 40px;" />
+            <Label text="CẢNH BÁO"
+                style="-fx-font-size: 15px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: #ea580c;" />
+            <Label text="Hành động này sẽ khóa tài khoản vĩnh viễn."
+                style="-fx-font-size: 12px;
+                          -fx-text-fill: #9a3412;"
+                alignment="CENTER" />
+            <Label text="Tài khoản phải có số dư = 0 mới có thể xóa."
+                style="-fx-font-size: 12px;
+                          -fx-text-fill: #9a3412;"
+                alignment="CENTER" />
+        </VBox>
+
+        <!-- Số tài khoản -->
+        <VBox spacing="6">
+            <Label text="SỐ TÀI KHOẢN CẦN XÓA"
+                style="-fx-font-size: 11px;
+                          -fx-font-weight: bold;
+                          -fx-text-fill: #475569;" />
+            <HBox alignment="CENTER_LEFT" spacing="0"
+                style="-fx-background-color: #f8fafc;
+                         -fx-border-color: #fecaca;
+                         -fx-border-radius: 8;
+                         -fx-background-radius: 8;
+                         -fx-padding: 0 12;">
+                <Label text="🗑"
+                    style="-fx-font-size: 14px;
+                              -fx-padding: 0 10 0 0;" />
+                <TextField promptText="Nhập số tài khoản cần xóa"
+                    prefHeight="44"
+                    style="-fx-background-color: transparent;
+                                  -fx-border-color: transparent;
+                                  -fx-font-size: 13px;"
+                    HBox.hgrow="ALWAYS" />
+            </HBox>
+        </VBox>
+
+        <!-- Thông tin TK (hiển thị sau khi nhập) -->
+        <VBox spacing="8"
+            style="-fx-background-color: #f8fafc;
+                     -fx-border-color: #e2e8f0;
+                     -fx-border-radius: 10;
+                     -fx-background-radius: 10;
+                     -fx-padding: 16;">
+            <HBox>
+                <Label text="Chủ tài khoản:"
+                    style="-fx-font-size: 12px;
+                              -fx-text-fill: #64748b;"
+                    prefWidth="140" />
+                <Label text="Nguyễn Văn A"
+                    style="-fx-font-size: 12px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #1e293b;" />
+            </HBox>
+            <HBox>
+                <Label text="Số dư hiện tại:"
+                    style="-fx-font-size: 12px;
+                              -fx-text-fill: #64748b;"
+                    prefWidth="140" />
+                <Label text="0 VNĐ"
+                    style="-fx-font-size: 12px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #16a34a;" />
+            </HBox>
+            <HBox>
+                <Label text="Trạng thái:"
+                    style="-fx-font-size: 12px;
+                              -fx-text-fill: #64748b;"
+                    prefWidth="140" />
+                <Label text="Active"
+                    style="-fx-font-size: 12px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #16a34a;" />
+            </HBox>
+        </VBox>
+
+        <!-- Nút xóa -->
+        <Button text="XÁC NHẬN XÓA TÀI KHOẢN"
+            prefWidth="Infinity"
+            prefHeight="50"
+            style="-fx-background-color: #ef4444;
+                       -fx-text-fill: white;
+                       -fx-font-weight: bold;
+                       -fx-font-size: 14px;
+                       -fx-background-radius: 10;
+                       -fx-cursor: hand;" />
+
+        <!-- Nút hủy -->
+        <Button text="Hủy"
+            prefWidth="Infinity"
+            prefHeight="44"
+            style="-fx-background-color: transparent;
+                       -fx-text-fill: #64748b;
+                       -fx-font-size: 13px;
+                       -fx-border-color: #e2e8f0;
+                       -fx-border-radius: 10;
+                       -fx-background-radius: 10;
+                       -fx-cursor: hand;" />
+
+    </VBox>
+
+    <!-- FOOTER -->
+    <HBox alignment="CENTER"
+        style="-fx-background-color: #f8fafc;
+                 -fx-padding: 16 0;
+                 -fx-border-color: #e2e8f0;
+                 -fx-border-width: 1 0 0 0;">
+        <Label text="© 2024 Bank Management System. All rights reserved."
+            style="-fx-font-size: 11px;
+                      -fx-text-fill: #94a3b8;" />
+    </HBox>
+
+</VBox>
