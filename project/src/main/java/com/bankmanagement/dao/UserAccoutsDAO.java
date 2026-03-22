@@ -8,52 +8,34 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.CallableStatement;
 
-/**
- * Data Access Object phụ trách luồng nghiệp vụ Xác thực Tài Khoản.
- */
-public class AuthDAO {
-
-    /**
-     * Xác thực thông tin đăng nhập của người dùng.
-     * 
-     * @param phone    Số điện thoại đăng nhập.
-     * @param password Mật khẩu đăng nhập.
-     * @return Đối tượng UserAccount nếu thành công, null nếu thất bại.
-     */
-    public static UserAccount login(String phone, String password) {
-        String sql = "SELECT u.userId, u.userName, u.roleUser, u.passWordHash, a.numberAccount " +
+public class UserAccoutsDAO {
+    public static UserAccount login(String numberAccount, String password) {
+        String sql = "SELECT u.userId, u.userName, u.roleUser " +
                 "FROM   USERACCOUNTS u " +
-                "LEFT JOIN ACCOUNTBANK a ON u.userId = a.userID AND a.state = 'Active' " +
-                "WHERE  u.numberPhone = ?";
+                "JOIN   ACCOUNTBANK  a ON u.userId = a.userID " +
+                "WHERE  a.numberAccount = ? " +
+                "AND    u.passWordHash  = ? " +
+                "AND    a.state         = 'Active'";
         try {
             Connection connection = dbConnection.getConnection();
             PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setString(1, phone);
+            ps.setString(0, numberAccount);
+            ps.setString(1, password);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                String storedHash = rs.getString("passWordHash");
-                if (org.mindrot.jbcrypt.BCrypt.checkpw(password, storedHash)) {
-                    UserAccount user = new UserAccount();
-                    user.setUserId(rs.getString("userId"));
-                    user.setUserName(rs.getString("userName"));
-                    user.setRoleUser(rs.getString("roleUser"));
-                    user.setNumberAccount(rs.getString("numberAccount"));
-                    return user;
-                }
+                UserAccount user = new UserAccount();
+                user.setUserId(rs.getString("userId"));
+                user.setUserName(rs.getString("userName"));
+                user.setRoleUser(rs.getString("roleUser"));
+                user.setNumberAccount(numberAccount);
+                return user;
             }
         } catch (Exception e) {
-            System.out.println("Login error: " + e.getMessage());
+            System.out.println("Login error: Incorrect account or password");
         }
         return null;
     }
 
-    /**
-     * Khởi tạo tài khoản hệ thống mới.
-     * Gọi thủ tục (Stored Procedure) createUserAccount từ DB.
-     * 
-     * @return "Success" nếu tạo mới thành công, hoặc thông báo lỗi cụ thể nếu xảy
-     *         ra Exception.
-     */
     public static String register(
             String userID,
             String userName,
