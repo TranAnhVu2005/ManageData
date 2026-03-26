@@ -99,6 +99,66 @@ delimiter ;
 
 /*End Task 1: Create account* - Lợi*/
 
+/*Start Task 9: Create accountBank* - Lợi*/
+
+DELIMITER $$
+
+CREATE PROCEDURE createBankAccount (
+    IN  p_numberAccount VARCHAR(10),
+    IN  p_pinCodeHash   VARCHAR(64),
+    IN  p_userID        VARCHAR(10),
+    OUT p_result INT
+)
+proc: BEGIN
+
+    DECLARE v_exist INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_result = 2; -- server error
+    END;
+
+    SET p_result = 2;
+
+    -- 1. Kiểm tra user tồn tại
+    SELECT 1 INTO v_exist
+    FROM USERACCOUNTS
+    WHERE userID = p_userID;
+
+    IF v_exist IS NULL THEN
+        SET p_result = 1; -- user không tồn tại
+        LEAVE proc;
+    END IF;
+
+    -- 2. Kiểm tra trùng số tài khoản
+    SELECT 1 INTO v_exist
+    FROM ACCOUNTBANK
+    WHERE numberAccount = p_numberAccount;
+
+    IF v_exist = 1 THEN
+        SET p_result = 3; -- account đã tồn tại
+        LEAVE proc;
+    END IF;
+
+    START TRANSACTION;
+
+    INSERT INTO ACCOUNTBANK
+    (numberAccount, userID, pinCodeHash,
+     balance, state, created_at)
+    VALUES
+    (p_numberAccount, p_userID, p_pinCodeHash,
+     0, 'Active', NOW());
+
+    COMMIT;
+
+    SET p_result = 0; -- success
+
+END$$
+DELIMITER ;
+
+/*End Task 9: Create accountBank* - Lợi*/
+
 
 /*Start Task 2: Update account* - Vũ*/
 delimiter $$
