@@ -6,7 +6,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.lang.reflect.Type;
 import java.sql.CallableStatement;
+import java.sql.Types;
 
 public class UserAccoutsDAO {
     public static UserAccount login(String numberAccount, String password) {
@@ -66,6 +68,25 @@ public class UserAccoutsDAO {
             if (e.getMessage().contains("Duplicate"))
                 return "Error: Phone or email already exists!";
             return "Error: " + e.getMessage();
+        }
+    }
+
+    public static int createBankAccount(String accountNumber, String pinCodeHash, String userId) {
+        String sql = "{call createBankAccount(?,?,?,?)}";
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement cs = conn.prepareCall(sql)) {
+
+            cs.setString(1, accountNumber);
+            cs.setString(2, pinCodeHash);
+            cs.setString(3, userId);
+            cs.registerOutParameter(4, Types.INTEGER);
+            cs.execute();
+
+            return cs.getInt(4);
+
+        } catch (SQLException e) {
+            System.out.println("Error creating bank account: " + e.getMessage());
+            return -1;
         }
     }
 }

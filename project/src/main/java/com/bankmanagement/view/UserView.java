@@ -53,12 +53,39 @@ public class UserView {
         System.out.print("Choose: ");
     }
 
+    public String getPinCode() {
+        String pinCode = "";
+        while (true) {
+            pinCode = readPassword("Enter new 6-digit PIN code: ");
+            if (pinCode.matches("\\d{6}")) {
+                String confirmPin = readPassword("Confirm new PIN code: ");
+                if (pinCode.equals(confirmPin)) {
+                    return pinCode;
+                } else {
+                    System.out.println("! PIN codes do not match. Please try again.");
+                }
+            } else {
+                System.out.println("! Invalid PIN format. Please enter exactly 6 digits.");
+            }
+        }
+    }
+
     private int readInt() {
         try {
             return Integer.parseInt(
                     sc.nextLine().trim());
         } catch (NumberFormatException e) {
             return -1;
+        }
+    }
+
+    private String readPassword(String prompt) {
+        if (System.console() != null) {
+            char[] pwd = System.console().readPassword(prompt);
+            return pwd != null ? new String(pwd).trim() : "";
+        } else {
+            System.out.print(prompt);
+            return sc.nextLine().trim();
         }
     }
 }

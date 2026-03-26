@@ -109,7 +109,7 @@ CREATE PROCEDURE createBankAccount (
 )
 proc: BEGIN
 
-    DECLARE v_exist INT;
+    DECLARE v_exist INT DEFAULT 0;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -119,28 +119,31 @@ proc: BEGIN
 
     SET p_result = 2;
 
+    START TRANSACTION;
+
     -- 1. Kiểm tra user tồn tại
-    SELECT 1 INTO v_exist
+    SELECT COUNT(*) INTO v_exist
     FROM USERACCOUNTS
     WHERE userID = p_userID;
 
-    IF v_exist IS NULL THEN
-        SET p_result = 1; -- user không tồn tại
+    IF v_exist = 0 THEN
+        SET p_result = 1;
+        ROLLBACK;
         LEAVE proc;
     END IF;
 
     -- 2. Kiểm tra trùng số tài khoản
-    SELECT 1 INTO v_exist
+    SELECT COUNT(*) INTO v_exist
     FROM ACCOUNTBANK
     WHERE numberAccount = p_numberAccount;
 
-    IF v_exist = 1 THEN
-        SET p_result = 3; -- account đã tồn tại
+    IF v_exist > 0 THEN
+        SET p_result = 3;
+        ROLLBACK;
         LEAVE proc;
     END IF;
 
-    START TRANSACTION;
-
+    -- 3. Insert
     INSERT INTO ACCOUNTBANK
     (numberAccount, userID, pinCodeHash,
      balance, state, created_at)
@@ -148,9 +151,8 @@ proc: BEGIN
     (p_numberAccount, p_userID, p_pinCodeHash,
      0, 'Active', NOW());
 
-    COMMIT;
-
     SET p_result = 0; -- success
+    COMMIT;
 
 END$$
 DELIMITER ;
