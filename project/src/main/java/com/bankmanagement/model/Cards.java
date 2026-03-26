@@ -1,4 +1,5 @@
 package com.bankmanagement.model;
+import java.util.Date;
 
 public class Cards {
     private String cardNumber;
@@ -36,27 +37,43 @@ public class Cards {
         this.cardNumber = cardNumber;
     }
 
-    public String getUserId() {
-        return userId;
+    public String getCardPinCodeHash() {
+        return cardPinCodeHash;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setCardPinCodeHash(String cardPinCodeHash) {
+        this.cardPinCodeHash = cardPinCodeHash;
     }
 
-    public String getCvv() {
-        return cvv;
+    public Date getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCvv(String cvv) {
-        this.cvv = cvv;
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public Date getExpiryDate() {
-        return expiryDate;
+    public Date getExpireDate() {
+        return expireDate;
     }
 
-    public void setExpiryDate(Date expiryDate) {
-        this.expiryDate = expiryDate;
+    public void setExpireDate(Date expireDate) {
+        this.expireDate = expireDate;
+    }
+
+    public String getSecureCode() {
+        return secureCode;
+    }
+
+    public void setSecureCode(String secureCode) {
+        this.secureCode = secureCode;
+    }
+
+    public String getNumberAccount() {
+        return numberAccount;
+    }
+
+    public void setNumberAccount(String numberAccount) {
+        this.numberAccount = numberAccount;
     }
 }

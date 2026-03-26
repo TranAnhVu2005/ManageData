@@ -1,7 +1,5 @@
 create database MANAGEBANKACCOUNT;
 use MANAGEBANKACCOUNT;
-select * from USERACCOUNTS;
-delete from useraccounts;
 /*Start create and modify database*/
 create table USERACCOUNTS (	
 	userID varchar(10) primary key,

@@ -3,6 +3,7 @@ package com.bankmanagement.controller;
 import com.bankmanagement.dao.AuthDAO;
 import com.bankmanagement.model.UserAccount;
 import com.bankmanagement.view.LoginView;
+import com.bankmanagement.view.UserView;
 
 public class AuthController {
 
@@ -50,7 +51,7 @@ public class AuthController {
         if (user.getRoleUser().equals("Staff")) {
             new AdminController(user).showMenu();
         } else {
-            new UserController(user).showMenu();
+            new UserView().showMenu(user);
         }
     }
 

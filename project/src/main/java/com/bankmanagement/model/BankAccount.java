@@ -1,4 +1,5 @@
-pakage com.bankmanagement.model;
+package com.bankmanagement.model;
+import java.util.Date;
 
 class BankAccount {
     private String numberAccount;

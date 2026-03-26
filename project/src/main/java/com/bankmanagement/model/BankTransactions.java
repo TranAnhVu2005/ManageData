@@ -1,4 +1,5 @@
 package com.bankmanagement.model;
+import java.util.Date;
 
 class BankTransactions {
     private String transactionId;
