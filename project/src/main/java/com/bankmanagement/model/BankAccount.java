@@ -1,7 +1,7 @@
 package com.bankmanagement.model;
 import java.util.Date;
 
-class BankAccount {
+public class BankAccount {
     private String numberAccount;
     private String userId;
     private String pinCodeHash;

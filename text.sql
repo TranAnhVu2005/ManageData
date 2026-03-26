@@ -7,7 +7,7 @@ create table USERACCOUNTS (
     ID char(12) not null unique,
     passWordHash varchar(200) not null,
     birthDay date not null,
-    numberPhone varchar(15) not null unique,
+    numberPhone varchar(10) not null unique,
     email varchar(100) not null unique,
     roleUser varchar(20) not null	
 );

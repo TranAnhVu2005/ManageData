@@ -40,7 +40,6 @@ public class AuthController {
         }
 
         UserAccount user = AuthDAO.login(account, password);
-
         if (user == null) {
             view.showError("Incorrect account or password!");
             return;

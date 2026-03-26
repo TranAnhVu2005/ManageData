@@ -4,19 +4,42 @@ import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import com.bankmanagement.controller.UserController;
+import com.bankmanagement.dao.UserAccoutsDAO;
+import com.bankmanagement.model.BankAccount;
 import com.bankmanagement.model.UserAccount;
 
 public class UserView {
 
     private Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+    // Các phương thức hiển thị menu và thu thập thông tin từ người dùng sẽ được định nghĩa ở đây
     
+    // Hiển thi menu chính dành cho người dùng sau khi đăng nhập thành công
     public void showMenu(UserAccount currentUser) {
         while (true) {
             System.out.println("\n+----------------------------------+");
             System.out.printf("|  Hello: %-25s|\n",
                     currentUser.getUserName());
-            System.out.printf("|  ACC: %-27s|\n",
-                    currentUser.getNumberAccount() != null ? currentUser.getNumberAccount() : "N/A");
+            // Kiểm tra nếu người dùng có tài khoản ngân hàng nào đang hoạt động hay không
+            // Lấy tài khoản tiền tại đây vì khi tạo tài khoản mới, số lượng tài khoản có thể thay đổi, nên cần cập nhật lại mỗi lần hiển thị menu
+            BankAccount[] bankAccounts = UserAccoutsDAO.getActiveAccountByUserId(currentUser.getUserId());
+            boolean hasAccount = bankAccounts != null &&
+                    java.util.Arrays.stream(bankAccounts)
+                            .anyMatch(acc -> acc != null);
+            // Nếu không có tài khoản nào, hiển thị "N/A", nếu có thì liệt kê tất cả tài khoản đang hoạt động của người dùng
+            // Đếm số lượng tài khoản đang hoạt động để hiển thị thông tin cho người dùng
+            int numberOfAccounts = hasAccount ? (int) java.util.Arrays.stream(bankAccounts)
+                    .filter(acc -> acc != null)
+                    .count() : 0;
+            System.out.println("Number of active bank accounts: " + numberOfAccounts);
+            if (!hasAccount) {
+                System.out.println("N/A");
+            } else {
+                for (BankAccount acc : bankAccounts) {
+                    if (acc != null) {
+                        System.out.printf("|  ACC: %-27s|\n", acc.getNumberAccount());
+                    }
+                }
+            }
             System.out.println("+----------------------------------+");
             System.out.println("|  1. Update information           |");
             System.out.println("|  2. Transfer money               |");
@@ -35,7 +58,7 @@ public class UserView {
                 case 3 -> System.out.println("[History - Task 6]");
                 case 4 -> System.out.println("[Balance - Task 5]");
                 case 5 -> System.out.println("[Withdraw - Task 3]");
-                case 6 -> new UserController(currentUser).createBankAccount();
+                case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);
                 case 0 -> {
                     System.out.println("Logged out!");
                     return;
@@ -45,14 +68,37 @@ public class UserView {
         }
     }
 
-    public void createBankAccountMenu() {
+    // Menu cho chức năng 5 - Xem số dư tài khoản
+    public void showBalanceMenu() {
+        System.out.println("[Select Money Account to Check Balance]");
+        
+    }
+
+    // Menu tạo tài khoản ngân hàng mới cho người dùng chức năng 6
+    public void createBankAccountMenu(int numberOfAccounts) {
         System.out.println("[Create Bank Account]");
+        System.out.println("You will have maximun 10 bank accounts.");
+        System.out.println("Presently, you,ve had " + numberOfAccounts + " bank account(s). You can create up to " + (10 - numberOfAccounts) + " more.");
+        if (numberOfAccounts >= 10) {
+            System.out.println("You have reached the maximum number of bank accounts. Please delete an existing account to create a new one.");
+            return;
+        }
         System.out.println("Create a new bank account based on random: 1");
         System.out.println("Create a new bank account based on phone number with 2 random digits: 2");
         System.out.println("Exit: 0");
         System.out.print("Choose: ");
     }
+    // Hiển thị kết quả tao tài khoản mới, hoặc thông báo lỗi nếu có
+    public void showCreateAccountResult(int result, String newAccountNumber) {
+        switch (result) {
+            case 0 -> System.out.println("Bank account created successfully! Your new account number is: " + newAccountNumber);
+            case 1 -> System.out.println("User does not exist. Please contact support.");
+            case 2 -> System.out.println("Server error occurred. Please try again later.");
+            default -> System.out.println("Account number already exists. Please try again.");
+        }
+    }   
 
+    // Phương thức thu thập mã PIN mới từ người dùng, đảm bảo định dạng và xác nhận lại
     public String getPinCode() {
         String pinCode = "";
         while (true) {
@@ -69,7 +115,7 @@ public class UserView {
             }
         }
     }
-
+    // Phương thức đọc lựa chọn số nguyên từ người dùng, xử lý lỗi định dạng
     private int readInt() {
         try {
             return Integer.parseInt(
@@ -78,7 +124,7 @@ public class UserView {
             return -1;
         }
     }
-
+    // Phương thức đọc mật khẩu từ console, nếu không có console (IDE), sẽ đọc như bình thường
     private String readPassword(String prompt) {
         if (System.console() != null) {
             char[] pwd = System.console().readPassword(prompt);

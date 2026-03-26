@@ -2,11 +2,11 @@ package com.bankmanagement.dao;
 
 import com.bankmanagement.config.dbConnection;
 import com.bankmanagement.model.UserAccount;
+import com.bankmanagement.model.BankAccount;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.lang.reflect.Type;
 import java.sql.CallableStatement;
 import java.sql.Types;
 
@@ -71,6 +71,7 @@ public class UserAccoutsDAO {
         }
     }
 
+    // Tạo tài khoản ngân hàng mới cho người dùng, trả về mã lỗi cụ thể để hiển thị thông báo phù hợp
     public static int createBankAccount(String accountNumber, String pinCodeHash, String userId) {
         String sql = "{call createBankAccount(?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
@@ -88,5 +89,27 @@ public class UserAccoutsDAO {
             System.out.println("Error creating bank account: " + e.getMessage());
             return -1;
         }
+    }
+
+    public static BankAccount[] getActiveAccountByUserId(String userId) {
+        String sql = "SELECT numberAccount FROM ACCOUNTBANK WHERE userID = ? AND state = 'Active'";
+        try (Connection conn = dbConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, userId);
+            ResultSet rs = ps.executeQuery();
+            BankAccount[] accounts = new BankAccount[10]; // Giả sử mỗi người dùng có tối đa 10 tài khoản
+            int index = 0;
+            while (rs.next() && index < accounts.length) {
+                BankAccount account = new BankAccount();
+                account.setNumberAccount(rs.getString("numberAccount"));
+                accounts[index++] = account;
+            }
+            return accounts;
+
+        } catch (SQLException e) {
+            System.out.println("Error fetching active account: " + e.getMessage());
+        }
+        return null;
     }
 }

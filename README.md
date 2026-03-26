@@ -5,8 +5,8 @@ Task cần làm:
 Đăng nhập
 Đăng ký
 
-Tao tai khoan - Loi
-Cap nhat tai khoan - Vu
+Tao tai khoan nguoi dung- Loi
+Cap nhat tai khoan tien- Vu
 Rut tien - Loi
 Chuyen tien - Vu
 Kiem tra so du - Loi
