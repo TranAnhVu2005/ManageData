@@ -56,9 +56,9 @@ public class UserView {
                 case 1 -> System.out.println("[Update Info - Task 2]");
                 case 2 -> System.out.println("[Transfer - Task 4]");
                 case 3 -> System.out.println("[History - Task 6]");
-                case 4 -> System.out.println("[Balance - Task 5]");
+                case 4 -> new UserController(currentUser).getBalance(bankAccounts); // Chuyển sang controller để xử lý chức năng xem số dư tài khoản
                 case 5 -> System.out.println("[Withdraw - Task 3]");
-                case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);
+                case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);// Truyền số lượng tài khoản hiện tại để kiểm tra giới hạn khi tạo tài khoản mới
                 case 0 -> {
                     System.out.println("Logged out!");
                     return;
@@ -69,9 +69,41 @@ public class UserView {
     }
 
     // Menu cho chức năng 5 - Xem số dư tài khoản
-    public void showBalanceMenu() {
-        System.out.println("[Select Money Account to Check Balance]");
-        
+    public void showBalanceMenu(BankAccount[] bankAccounts) {
+        //Dùng lại code phần hiển thị số lượng tài khoản và danh sách tài khoản đang hoạt động của người dùng để người dùng chọn tài khoản muốn xem số dư
+            boolean hasAccount = bankAccounts != null &&
+                    java.util.Arrays.stream(bankAccounts)
+                            .anyMatch(acc -> acc != null);
+            int numberOfAccounts = hasAccount ? (int) java.util.Arrays.stream(bankAccounts)
+                    .filter(acc -> acc != null)
+                    .count() : 0;
+            System.out.println("Number of active bank accounts: " + numberOfAccounts);
+            if (!hasAccount) {
+                System.out.println("N/A");
+            } else {
+                int i = 1;
+                System.out.println("|ORDER|  ACCOUNT NUMBER              |");
+                for (BankAccount acc : bankAccounts) {
+                    if (acc != null) {
+                        System.out.printf("|  %d. |ACC: %-27s|\n", i++, acc.getNumberAccount());
+                    }
+                }
+            }
+        System.out.println("[Select Money Account to Check Balance - Select by Order]");
+        System.out.println("Exit: 0");
+        System.out.print("Choose: ");
+    }
+
+    // Hiển thị kết quả lấy số dư tài khoản, hoặc thông báo lỗi nếu có
+    public void showBalanceResult(double balance, int resultCode) {
+        switch (resultCode) {
+            case 0 -> System.out.println("Balance: " + balance);
+            case 1 -> System.out.println("Account does not exist. Please contact support.");
+            case 2 -> System.out.println("Account is Blocked. Please contact support.");
+            case 3 -> System.out.println("Incorrect PIN code. Please try again.");
+            case 4 -> System.out.println("Server error occurred. Please try again later.");
+            default -> System.out.println("Unknown error occurred. Please contact support.");
+        }
     }
 
     // Menu tạo tài khoản ngân hàng mới cho người dùng chức năng 6

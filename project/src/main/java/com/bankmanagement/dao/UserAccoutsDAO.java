@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.CallableStatement;
 import java.sql.Types;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UserAccoutsDAO {
     public static UserAccount login(String numberAccount, String password) {
@@ -71,6 +73,34 @@ public class UserAccoutsDAO {
         }
     }
 
+    //  Hàm lấy số dư tài khoản dựa trên số tài khoản, sử dụng thủ tục lưu trữ trong CSDL để đảm bảo lấy được số dư mới nhất sau mỗi giao dịch
+    public static Map<String, Object> getBalance(String accountNumber, String pinCodeHash) {
+        String sql = "{call checkBalance(?,?,?,?)}";
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement cs = conn.prepareCall(sql)) {
+
+            cs.setString(1, accountNumber);
+            cs.setString(2, pinCodeHash);
+            cs.registerOutParameter(3, Types.DOUBLE);
+            cs.registerOutParameter(4, Types.INTEGER);
+            cs.execute();
+
+            double balance = cs.getDouble(3);
+            int resultCode = cs.getInt(4);
+            Map<String, Object> result = new HashMap<>();
+            result.put("balance", balance);
+            result.put("resultCode", resultCode);
+
+            return result;
+        } catch (SQLException e) {
+            System.out.println("Error fetching balance: " + e.getMessage());
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("balance", -1);
+            errorResult.put("resultCode", -1);
+            return errorResult;
+        }
+    }
+
     // Tạo tài khoản ngân hàng mới cho người dùng, trả về mã lỗi cụ thể để hiển thị thông báo phù hợp
     public static int createBankAccount(String accountNumber, String pinCodeHash, String userId) {
         String sql = "{call createBankAccount(?,?,?,?)}";
@@ -92,7 +122,8 @@ public class UserAccoutsDAO {
     }
 
     public static BankAccount[] getActiveAccountByUserId(String userId) {
-        String sql = "SELECT numberAccount FROM ACCOUNTBANK WHERE userID = ? AND state = 'Active'";
+        String sql = "SELECT numberAccount, pinCodeHash, balance,state " +
+             "FROM ACCOUNTBANK WHERE userID = ? AND state = 'Active'";
         try (Connection conn = dbConnection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -103,6 +134,10 @@ public class UserAccoutsDAO {
             while (rs.next() && index < accounts.length) {
                 BankAccount account = new BankAccount();
                 account.setNumberAccount(rs.getString("numberAccount"));
+                account.setUserId(userId);
+                account.setPinCodeHash(rs.getString("pinCodeHash"));
+                account.setState(rs.getString("state"));
+                account.setBalance(rs.getDouble("balance"));
                 accounts[index++] = account;
             }
             return accounts;
