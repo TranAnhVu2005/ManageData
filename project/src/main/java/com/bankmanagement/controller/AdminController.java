@@ -32,10 +32,8 @@ public class AdminController {
                 case 1 -> System.out.println("[Create Bank Account - Task 9 - Loi]");
                 case 2 -> System.out.println("[Deposit Money      - Task 7 - Loi]");
                 case 3 -> blockAccount();
-                case 4 -> unblockAccount();
-                case 5 -> viewAllCustomers();
-                case 6 -> searchCustomer();
-                case 7 -> viewAllTransactions();
+                case 4 -> viewAllCustomers();
+                case 5 -> searchCustomer();
                 case 0 -> { System.out.println("Logged out!"); return; }
                 default -> System.out.println("! Invalid choice.");
             }
@@ -49,10 +47,8 @@ public class AdminController {
         System.out.println("|  1. Create bank account   [Loi]          |");
         System.out.println("|  2. Deposit money         [Loi]          |");
         System.out.println("|  3. Block account                        |");
-        System.out.println("|  4. Unblock account                      |");
-        System.out.println("|  5. View all customers                   |");
-        System.out.println("|  6. Search customer                      |");
-        System.out.println("|  7. View all transactions                |");
+        System.out.println("|  4. View all customers                   |");
+        System.out.println("|  5. Search customer                      |");
         System.out.println("|  0. Logout                               |");
         System.out.println("+------------------------------------------+");
         System.out.print("Choose: ");
@@ -76,23 +72,7 @@ public class AdminController {
     }
 
     // =========================================================================
-    // Task 16 — Mở khóa tài khoản ngân hàng
-    // =========================================================================
-
-    private void unblockAccount() {
-        System.out.println("\n--- UNBLOCK ACCOUNT ---");
-        System.out.print("Account number to unblock: ");
-        String numberAccount = sc.nextLine().trim();
-        if (numberAccount.isEmpty()) {
-            System.out.println("! Account number cannot be empty.");
-            return;
-        }
-        String result = UserAccoutsDAO.unblockAccount(numberAccount);
-        System.out.println("-> " + result);
-    }
-
-    // =========================================================================
-    // Task 13 — Xem danh sách toàn bộ khách hàng
+    // Xem danh sách toàn bộ khách hàng
     // =========================================================================
 
     private void viewAllCustomers() {
@@ -106,7 +86,7 @@ public class AdminController {
     }
 
     // =========================================================================
-    // Task 14 — Tìm kiếm khách hàng theo SĐT hoặc CCCD
+    // Task 12 — Tìm kiếm khách hàng theo SĐT hoặc CCCD
     // =========================================================================
 
     private void searchCustomer() {
@@ -133,22 +113,6 @@ public class AdminController {
     }
 
     // =========================================================================
-    // Task 15 — Xem toàn bộ giao dịch hệ thống
-    // =========================================================================
-
-    private void viewAllTransactions() {
-        System.out.println("\n--- ALL SYSTEM TRANSACTIONS ---");
-        String[] status = new String[1];
-        List<Map<String, Object>> transactions = UserAccoutsDAO.getAllTransactions(status);
-
-        if (transactions.isEmpty()) {
-            System.out.println("No transactions found.");
-            return;
-        }
-        printTransactionTable(transactions);
-    }
-
-    // =========================================================================
     // HELPERS — In dữ liệu ra console dạng bảng
     // =========================================================================
 
@@ -165,22 +129,6 @@ public class AdminController {
                 u.get("birthDay"));
         }
         System.out.println("Total: " + users.size() + " record(s).");
-    }
-
-    private void printTransactionTable(List<Map<String, Object>> transactions) {
-        System.out.printf("%-30s | %-20s | %-15s | %-12s | %-10s | %-10s%n",
-            "TransactionID", "Date", "Amount", "Status", "From", "To");
-        System.out.println("-".repeat(110));
-        for (Map<String, Object> t : transactions) {
-            System.out.printf("%-30s | %-20s | %,15.2f | %-12s | %-10s | %-10s%n",
-                t.get("transactionId"),
-                t.get("created_at"),
-                t.get("amount"),
-                t.get("state"),
-                t.get("numberAccount"),
-                t.getOrDefault("destinationAccount", "N/A"));
-        }
-        System.out.println("Total: " + transactions.size() + " transaction(s).");
     }
 
     private int readInt() {

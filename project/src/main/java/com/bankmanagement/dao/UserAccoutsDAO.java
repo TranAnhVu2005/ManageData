@@ -85,7 +85,7 @@ public class UserAccoutsDAO {
     // =========================================================================
 
     /**
-     * [Task 11] Lấy toàn bộ thông tin hồ sơ của người dùng theo userID.
+     * Lấy toàn bộ thông tin hồ sơ của người dùng theo userID.
      * Trả về Map để View dễ dàng render mà không phụ thuộc vào Model.
      */
     public static Map<String, String> getProfile(String userID) {
@@ -254,22 +254,6 @@ public class UserAccoutsDAO {
         }
     }
 
-    /**
-     * [Task 16] Mở khóa tài khoản ngân hàng đang bị Blocked.
-     * Chỉ Staff mới được phép thực hiện thao tác này.
-     */
-    public static String unblockAccount(String numberAccount) {
-        String sql = "{call unblockAccount(?,?)}";
-        try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
-            cs.setString(1, numberAccount);
-            cs.registerOutParameter(2, Types.VARCHAR);
-            cs.execute();
-            return cs.getString(2);
-        } catch (Exception e) {
-            return "Error: " + e.getMessage();
-        }
-    }
 
     // =========================================================================
     // NHÓM 4: GIAO DỊCH (Transaction Operations)
@@ -339,7 +323,7 @@ public class UserAccoutsDAO {
     }
 
     /**
-     * [Task 12] Lọc lịch sử giao dịch theo khoảng thời gian (từ ngày — đến ngày).
+     * [Task 11] Lọc lịch sử giao dịch theo khoảng thời gian (từ ngày — đến ngày).
      * Format date input: "yyyy-MM-dd" hoặc "yyyy-MM-dd HH:mm:ss".
      */
     public static List<Map<String, Object>> searchTransactionByDate(
@@ -387,7 +371,7 @@ public class UserAccoutsDAO {
     // =========================================================================
 
     /**
-     * [Task 13] Lấy danh sách toàn bộ khách hàng trong hệ thống.
+     * Lấy danh sách toàn bộ khách hàng trong hệ thống.
      * Chỉ phục vụ tài khoản Staff — không lọc theo roleUser vì Staff đã được kiểm soát ở Controller.
      */
     public static List<Map<String, String>> getAllUsers() {
@@ -416,7 +400,7 @@ public class UserAccoutsDAO {
     }
 
     /**
-     * [Task 14] Tìm kiếm khách hàng theo số điện thoại hoặc CCCD (tìm gần đúng).
+     * [Task 12] Tìm kiếm khách hàng theo số điện thoại hoặc CCCD (tìm gần đúng).
      * Trả về null nếu không tìm thấy (resultStatus[0] = "Not found").
      */
     public static List<Map<String, String>> searchUser(String keyword, String[] resultStatus) {
@@ -456,44 +440,7 @@ public class UserAccoutsDAO {
         }
     }
 
-    /**
-     * [Task 15] Lấy toàn bộ lịch sử giao dịch hệ thống — chỉ dành cho Staff.
-     */
-    public static List<Map<String, Object>> getAllTransactions(String[] resultStatus) {
-        String sql = "{call getAllTransactions(?)}";
-        try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
-            cs.registerOutParameter(1, Types.VARCHAR);
 
-            boolean hasResultSet = cs.execute();
-            List<Map<String, Object>> rows = new ArrayList<>();
-
-            do {
-                if (hasResultSet) {
-                    try (ResultSet rs = cs.getResultSet()) {
-                        while (rs.next()) {
-                            Map<String, Object> row = new HashMap<>();
-                            row.put("transactionId",      rs.getString("transactionId"));
-                            row.put("created_at",          rs.getString("created_at"));
-                            row.put("amount",              rs.getDouble("amount"));
-                            row.put("state",               rs.getString("stateOfTransaction"));
-                            row.put("type",                rs.getString("typeOfTransactionCode"));
-                            row.put("numberAccount",       rs.getString("numberAccount"));
-                            row.put("destinationAccount",  rs.getString("destinationAccount"));
-                            rows.add(row);
-                        }
-                    }
-                }
-                hasResultSet = cs.getMoreResults();
-            } while (hasResultSet || cs.getUpdateCount() != -1);
-
-            resultStatus[0] = cs.getString(1);
-            return rows;
-        } catch (Exception e) {
-            resultStatus[0] = "Error: " + e.getMessage();
-            return new ArrayList<>();
-        }
-    }
 
     // =========================================================================
     // PRIVATE HELPER

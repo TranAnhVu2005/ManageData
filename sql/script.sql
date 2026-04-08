@@ -1,3 +1,4 @@
+DROP DATABASE IF EXISTS MANAGEBANKACCOUNT;
 create database MANAGEBANKACCOUNT;
 use MANAGEBANKACCOUNT;
 /*Start create and modify database*/
@@ -588,7 +589,7 @@ delimiter ;
 
 
 
-/*Start Task 12: Search transaction by date range* - Vũ*/
+/*Start Task 11: Search transaction by date range* - Vũ*/
 delimiter $$
 /*
  * searchTransactionByDate: Lọc lịch sử giao dịch của một tài khoản theo khoảng thời gian.
@@ -620,11 +621,11 @@ begin
     END IF;
 end$$
 delimiter ;
-/*End Task 12: Search transaction by date range* - Vũ*/
+/*End Task 11: Search transaction by date range* - Vũ*/
 
 
 
-/*Start Task 14: Search user by phone or ID* - Vũ*/
+/*Start Task 12: Search user by phone or ID* - Vũ*/
 delimiter $$
 /*
  * searchUser: Tìm kiếm khách hàng theo số điện thoại hoặc số CCCD.
@@ -653,59 +654,7 @@ begin
     end if;
 end$$
 delimiter ;
-/*End Task 14: Search user by phone or ID* - Vũ*/
+/*End Task 12: Search user by phone or ID* - Vũ*/
 
 
 
-/*Start Task 15: Get all bank transactions (Admin)* - Vũ*/
-delimiter $$
-/*
- * getAllTransactions: Truy xuất toàn bộ lịch sử giao dịch trong hệ thống.
- * Chỉ dành cho Staff — dùng để kiểm tra/báo cáo nghiệp vụ.
- */
-create procedure getAllTransactions(
-    OUT p_result varchar(200)
-)
-begin
-    select transactionId, created_at, amount, stateOfTransaction,
-           typeOfTransactionCode, numberAccount, destinationAccount
-    from BANKTRANSACTIONS
-    order by created_at desc;
-    set p_result = "Success";
-end$$
-delimiter ;
-/*End Task 15: Get all bank transactions (Admin)* - Vũ*/
-
-
-
-/*Start Task 16: Unblock bank account* - Vũ*/
-delimiter $$
-/*
- * unblockAccount: Mở khóa tài khoản ngân hàng đang ở trạng thái Blocked.
- * Thực tế: Staff mới có quyền thực hiện thao tác này.
- */
-create procedure unblockAccount(
-    IN p_numberAccount varchar(10),
-    OUT p_result varchar(200)
-)
-begin
-    declare v_state enum("Active","Blocked");
-
-    declare exit handler for sqlexception
-    begin
-        set p_result = "Error";
-    end;
-
-    select state into v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
-
-    IF v_state is null THEN
-        set p_result = "Not found account";
-    ELSEIF v_state = "Active" THEN
-        set p_result = "This account is already active";
-    ELSE
-        update ACCOUNTBANK set state = "Active" where numberAccount = p_numberAccount;
-        set p_result = "Success";
-    END IF;
-end$$
-delimiter ;
-/*End Task 16: Unblock bank account* - Vũ*/
