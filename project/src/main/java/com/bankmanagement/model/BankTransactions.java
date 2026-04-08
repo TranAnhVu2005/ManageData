@@ -1,7 +1,7 @@
 package com.bankmanagement.model;
 import java.util.Date;
 
-class BankTransactions {
+public class BankTransactions {
     private String transactionId;
     private Date createdAt;
     private double amount;

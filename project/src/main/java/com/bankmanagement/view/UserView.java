@@ -1,169 +1,274 @@
 package com.bankmanagement.view;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
-
 import com.bankmanagement.controller.UserController;
 import com.bankmanagement.dao.UserAccoutsDAO;
 import com.bankmanagement.model.BankAccount;
 import com.bankmanagement.model.UserAccount;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+
+/**
+ * Toàn bộ giao diện console dành cho người dùng Client.
+ * Phụ trách: Hiển thị menu, thu thập input, in kết quả ra màn hình.
+ * Không chứa bất kỳ logic nghiệp vụ nào — mọi xử lý đều đẩy lên Controller.
+ */
 public class UserView {
 
-    private Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
-    // Các phương thức hiển thị menu và thu thập thông tin từ người dùng sẽ được định nghĩa ở đây
-    
-    // Hiển thi menu chính dành cho người dùng sau khi đăng nhập thành công
+    private final Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+
+    /**
+     * Vòng lặp menu chính của Client — tự động tải lại danh sách tài khoản sau mỗi thao tác
+     * để đảm bảo số dư và danh sách luôn phản ánh trạng thái mới nhất từ DB.
+     */
     public void showMenu(UserAccount currentUser) {
         while (true) {
-            System.out.println("\n+----------------------------------+");
-            System.out.printf("|  Hello: %-25s|\n",
-                    currentUser.getUserName());
-            // Kiểm tra nếu người dùng có tài khoản ngân hàng nào đang hoạt động hay không
-            // Lấy tài khoản tiền tại đây vì khi tạo tài khoản mới, số lượng tài khoản có thể thay đổi, nên cần cập nhật lại mỗi lần hiển thị menu
+            // Tải lại mỗi lần để phản ánh thay đổi sau khi tạo tài khoản mới
             BankAccount[] bankAccounts = UserAccoutsDAO.getActiveAccountByUserId(currentUser.getUserId());
-            boolean hasAccount = bankAccounts != null &&
-                    java.util.Arrays.stream(bankAccounts)
-                            .anyMatch(acc -> acc != null);
-            // Nếu không có tài khoản nào, hiển thị "N/A", nếu có thì liệt kê tất cả tài khoản đang hoạt động của người dùng
-            // Đếm số lượng tài khoản đang hoạt động để hiển thị thông tin cho người dùng
-            int numberOfAccounts = hasAccount ? (int) java.util.Arrays.stream(bankAccounts)
-                    .filter(acc -> acc != null)
-                    .count() : 0;
-            System.out.println("Number of active bank accounts: " + numberOfAccounts);
-            if (!hasAccount) {
-                System.out.println("N/A");
-            } else {
-                for (BankAccount acc : bankAccounts) {
-                    if (acc != null) {
-                        System.out.printf("|  ACC: %-27s|\n", acc.getNumberAccount());
-                    }
-                }
-            }
-            System.out.println("+----------------------------------+");
-            System.out.println("|  1. Update information           |");
-            System.out.println("|  2. Transfer money               |");
-            System.out.println("|  3. View transaction history     |");
-            System.out.println("|  4. Check balance                |");
-            System.out.println("|  5. Withdraw money               |");
-            System.out.println("|  6. Create bank account          |");
-            System.out.println("|  0. Logout                       |");
-            System.out.println("+----------------------------------+");
-            System.out.print("Choose: ");
+            boolean hasAccount = hasAny(bankAccounts);
+            int numberOfAccounts = countAccounts(bankAccounts);
+
+            printHeader(currentUser, bankAccounts, hasAccount);
 
             int choice = readInt();
             switch (choice) {
-                case 1 -> System.out.println("[Update Info - Task 2]");
-                case 2 -> System.out.println("[Transfer - Task 4]");
-                case 3 -> System.out.println("[History - Task 6]");
-                case 4 -> new UserController(currentUser).getBalance(bankAccounts); // Chuyển sang controller để xử lý chức năng xem số dư tài khoản
-                case 5 -> System.out.println("[Withdraw - Task 3]");
-                case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);// Truyền số lượng tài khoản hiện tại để kiểm tra giới hạn khi tạo tài khoản mới
-                case 0 -> {
-                    System.out.println("Logged out!");
-                    return;
-                }
-                default -> System.out.println("! Invalid choice");
+                case 1 -> new UserController(currentUser).updateInfo();
+                case 2 -> new UserController(currentUser).transferMoney(bankAccounts);
+                case 3 -> new UserController(currentUser).checkTransaction(bankAccounts);
+                case 4 -> new UserController(currentUser).getBalance(bankAccounts);
+                case 5 -> System.out.println("[Withdraw Money - Task 3 - Loi]");
+                case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);
+                case 7 -> new UserController(currentUser).viewProfile();
+                case 8 -> new UserController(currentUser).searchTransactionByDate(bankAccounts);
+                case 9 -> new UserController(currentUser).changePin(bankAccounts);
+                case 0 -> { System.out.println("Logged out!"); return; }
+                default -> System.out.println("! Invalid choice.");
             }
         }
     }
 
-    // Menu cho chức năng 5 - Xem số dư tài khoản
-    public void showBalanceMenu(BankAccount[] bankAccounts) {
-        //Dùng lại code phần hiển thị số lượng tài khoản và danh sách tài khoản đang hoạt động của người dùng để người dùng chọn tài khoản muốn xem số dư
-            boolean hasAccount = bankAccounts != null &&
-                    java.util.Arrays.stream(bankAccounts)
-                            .anyMatch(acc -> acc != null);
-            int numberOfAccounts = hasAccount ? (int) java.util.Arrays.stream(bankAccounts)
-                    .filter(acc -> acc != null)
-                    .count() : 0;
-            System.out.println("Number of active bank accounts: " + numberOfAccounts);
-            if (!hasAccount) {
-                System.out.println("N/A");
-            } else {
-                int i = 1;
-                System.out.println("|ORDER|  ACCOUNT NUMBER              |");
-                for (BankAccount acc : bankAccounts) {
-                    if (acc != null) {
-                        System.out.printf("|  %d. |ACC: %-27s|\n", i++, acc.getNumberAccount());
-                    }
+    private void printHeader(UserAccount user, BankAccount[] accounts, boolean hasAccount) {
+        System.out.println("\n+------------------------------------+");
+        System.out.printf("|  Hello: %-26s|%n", user.getUserName());
+        System.out.println("+------------------------------------+");
+        if (hasAccount) {
+            for (BankAccount acc : accounts) {
+                if (acc != null) {
+                    System.out.printf("|  ACC: %-29s|%n", acc.getNumberAccount());
                 }
             }
-        System.out.println("[Select Money Account to Check Balance - Select by Order]");
-        System.out.println("Exit: 0");
+        } else {
+            System.out.println("|  No active bank account            |");
+        }
+        System.out.println("+------------------------------------+");
+        System.out.println("|  1.  Update information            |");
+        System.out.println("|  2.  Transfer money                |");
+        System.out.println("|  3.  Transaction history           |");
+        System.out.println("|  4.  Check balance                 |");
+        System.out.println("|  5.  Withdraw money    [Loi]       |");
+        System.out.println("|  6.  Create bank account           |");
+        System.out.println("|  7.  View profile                  |");
+        System.out.println("|  8.  Search transactions by date   |");
+        System.out.println("|  9.  Change bank PIN               |");
+        System.out.println("|  0.  Logout                        |");
+        System.out.println("+------------------------------------+");
         System.out.print("Choose: ");
     }
 
-    // Hiển thị kết quả lấy số dư tài khoản, hoặc thông báo lỗi nếu có
+    // =========================================================================
+    // Hiển thị menu chọn tài khoản (dùng chung nhiều tính năng)
+    // =========================================================================
+
+    public void showBalanceMenu(BankAccount[] bankAccounts) {
+        int i = 1;
+        System.out.println("\nYour bank accounts:");
+        System.out.printf("  %-6s | %-12s%n", "No.", "Account");
+        System.out.println("  " + "-".repeat(22));
+        for (BankAccount acc : bankAccounts) {
+            if (acc != null) {
+                System.out.printf("  %-6d | %-12s%n", i++, acc.getNumberAccount());
+            }
+        }
+        System.out.println("  0      | Exit");
+        System.out.print("Choose: ");
+    }
+
+    // =========================================================================
+    // Hiển thị kết quả các nghiệp vụ
+    // =========================================================================
+
+    /**
+     * In kết quả kiểm tra số dư.
+     * result code đồng bộ với checkBalance Proc: 0=OK, 1=not found, 3=blocked, 4=error.
+     */
     public void showBalanceResult(double balance, int resultCode) {
         switch (resultCode) {
-            case 0 -> System.out.println("Balance: " + balance);
-            case 1 -> System.out.println("Account does not exist. Please contact support.");
-            case 2 -> System.out.println("Account is Blocked. Please contact support.");
-            case 3 -> System.out.println("Incorrect PIN code. Please try again.");
-            case 4 -> System.out.println("Server error occurred. Please try again later.");
-            default -> System.out.println("Unknown error occurred. Please contact support.");
+            case 0 -> System.out.printf("Balance: %,.2f VND%n", balance);
+            case 1 -> System.out.println("! Account not found. Please contact support.");
+            case 3 -> System.out.println("! Account is Blocked. Please contact support.");
+            case 4 -> System.out.println("! Server error. Please try again later.");
+            default -> System.out.println("! Unknown error. Please contact support.");
         }
     }
 
-    // Menu tạo tài khoản ngân hàng mới cho người dùng chức năng 6
-    public void createBankAccountMenu(int numberOfAccounts) {
-        System.out.println("[Create Bank Account]");
-        System.out.println("You will have maximun 10 bank accounts.");
-        System.out.println("Presently, you,ve had " + numberOfAccounts + " bank account(s). You can create up to " + (10 - numberOfAccounts) + " more.");
-        if (numberOfAccounts >= 10) {
-            System.out.println("You have reached the maximum number of bank accounts. Please delete an existing account to create a new one.");
-            return;
-        }
-        System.out.println("Create a new bank account based on random: 1");
-        System.out.println("Create a new bank account based on phone number with 2 random digits: 2");
-        System.out.println("Exit: 0");
-        System.out.print("Choose: ");
-    }
-    // Hiển thị kết quả tao tài khoản mới, hoặc thông báo lỗi nếu có
+    /**
+     * In kết quả tạo tài khoản ngân hàng.
+     * result code đồng bộ với createBankAccount Proc:
+     *   0=OK, 1=user not found, 2=server error, 3=duplicate account.
+     */
     public void showCreateAccountResult(int result, String newAccountNumber) {
         switch (result) {
-            case 0 -> System.out.println("Bank account created successfully! Your new account number is: " + newAccountNumber);
-            case 1 -> System.out.println("User does not exist. Please contact support.");
-            case 2 -> System.out.println("Server error occurred. Please try again later.");
-            default -> System.out.println("Account number already exists. Please try again.");
-        }
-    }   
-
-    // Phương thức thu thập mã PIN mới từ người dùng, đảm bảo định dạng và xác nhận lại
-    public String getPinCode() {
-        String pinCode = "";
-        while (true) {
-            pinCode = readPassword("Enter new 6-digit PIN code: ");
-            if (pinCode.matches("\\d{6}")) {
-                String confirmPin = readPassword("Confirm new PIN code: ");
-                if (pinCode.equals(confirmPin)) {
-                    return pinCode;
-                } else {
-                    System.out.println("! PIN codes do not match. Please try again.");
-                }
-            } else {
-                System.out.println("! Invalid PIN format. Please enter exactly 6 digits.");
-            }
+            case 0 -> System.out.println("Bank account created! Account number: " + newAccountNumber);
+            case 1 -> System.out.println("! User not found. Please contact support.");
+            case 2 -> System.out.println("! Server error. Please try again later.");
+            default -> System.out.println("! Account number conflict. Please try again.");
         }
     }
-    // Phương thức đọc lựa chọn số nguyên từ người dùng, xử lý lỗi định dạng
+
+    // =========================================================================
+    // Hiển thị bảng giao dịch
+    // =========================================================================
+
+    /**
+     * In lịch sử giao dịch dạng bảng — dùng chung cho checkTransaction và searchTransactionByDate.
+     * numberAccount giúp phân biệt giao dịch đến (IN) hay đi (OUT).
+     */
+    public void showTransactionTable(List<Map<String, Object>> transactions, String numberAccount) {
+        if (transactions.isEmpty()) {
+            System.out.println("No transactions found.");
+            return;
+        }
+
+        System.out.println();
+        System.out.printf("%-14s | %-20s | %-15s | %-10s | %-6s | %-12s%n",
+            "ID", "Date", "Amount (VND)", "Status", "Dir", "Counterpart");
+        System.out.println("-".repeat(95));
+
+        for (Map<String, Object> t : transactions) {
+            String from = (String) t.get("numberAccount");
+            String to   = (String) t.getOrDefault("destinationAccount", "");
+
+            // Chiều giao dịch: OUT = tiền đi, IN = tiền đến
+            String direction   = numberAccount.equals(from) ? "OUT" : "IN";
+            String counterpart = numberAccount.equals(from) ? (to.isEmpty() ? "N/A" : to) : from;
+
+            System.out.printf("%-14s | %-20s | %,15.2f | %-10s | %-6s | %-12s%n",
+                shorten((String) t.get("transactionId"), 14),
+                t.get("created_at"),
+                t.get("amount"),
+                t.get("state"),
+                direction,
+                counterpart);
+        }
+        System.out.println("-".repeat(95));
+        System.out.println("Total: " + transactions.size() + " transaction(s).");
+    }
+
+    // =========================================================================
+    // Hiển thị hồ sơ cá nhân (Task 11)
+    // =========================================================================
+
+    public void showProfile(Map<String, String> profile) {
+        System.out.println("\n+---- YOUR PROFILE ----+");
+        System.out.println("  User ID   : " + profile.get("userID"));
+        System.out.println("  Full Name : " + profile.get("userName"));
+        System.out.println("  ID Card   : " + profile.get("ID"));
+        System.out.println("  Birthday  : " + profile.get("birthDay"));
+        System.out.println("  Phone     : " + profile.get("numberPhone"));
+        System.out.println("  Email     : " + profile.get("email"));
+        System.out.println("  Role      : " + profile.get("roleUser"));
+        System.out.println("+----------------------+");
+    }
+
+    // =========================================================================
+    // Thu thập mã PIN từ người dùng
+    // =========================================================================
+
+    /**
+     * Dùng khi TẠO PIN mới: Nhập 2 lần để xác nhận, validate đúng 6 chữ số.
+     */
+    public String getPinCode() {
+        while (true) {
+            String pin = readPassword("New 6-digit PIN: ");
+            if (!pin.matches("\\d{6}")) {
+                System.out.println("! PIN must be exactly 6 digits.");
+                continue;
+            }
+            String confirm = readPassword("Confirm PIN    : ");
+            if (pin.equals(confirm)) return pin;
+            System.out.println("! PINs do not match. Try again.");
+        }
+    }
+
+    /**
+     * Dùng khi XÁC THỰC PIN hiện tại: Chỉ nhập 1 lần, không validate định dạng.
+     */
+    public String enterPin() {
+        return readPassword("Enter PIN: ");
+    }
+
+    // =========================================================================
+    // Menu tạo tài khoản ngân hàng
+    // =========================================================================
+
+    public void createBankAccountMenu(int numberOfAccounts) {
+        System.out.println("\n[Create Bank Account]");
+        System.out.printf("You have %d/10 account(s). Can create %d more.%n",
+            numberOfAccounts, 10 - numberOfAccounts);
+
+        if (numberOfAccounts >= 10) {
+            System.out.println("! Maximum accounts reached. Block an existing one first.");
+            return;
+        }
+        System.out.println("  1. Random account number");
+        System.out.println("  2. Based on phone number (+ 2 digits)");
+        System.out.println("  0. Exit");
+        System.out.print("Choose: ");
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    private boolean hasAny(BankAccount[] accounts) {
+        if (accounts == null) return false;
+        for (BankAccount acc : accounts) {
+            if (acc != null) return true;
+        }
+        return false;
+    }
+
+    private int countAccounts(BankAccount[] accounts) {
+        if (accounts == null) return 0;
+        int count = 0;
+        for (BankAccount acc : accounts) {
+            if (acc != null) count++;
+        }
+        return count;
+    }
+
+    /** Cắt ngắn chuỗi TransactionID dài cho vừa cột bảng. */
+    private String shorten(String s, int maxLen) {
+        if (s == null) return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen - 2) + "..";
+    }
+
     private int readInt() {
         try {
-            return Integer.parseInt(
-                    sc.nextLine().trim());
+            return Integer.parseInt(sc.nextLine().trim());
         } catch (NumberFormatException e) {
             return -1;
         }
     }
-    // Phương thức đọc mật khẩu từ console, nếu không có console (IDE), sẽ đọc như bình thường
+
     private String readPassword(String prompt) {
         if (System.console() != null) {
             char[] pwd = System.console().readPassword(prompt);
             return pwd != null ? new String(pwd).trim() : "";
-        } else {
-            System.out.print(prompt);
-            return sc.nextLine().trim();
         }
+        System.out.print(prompt);
+        return sc.nextLine().trim();
     }
 }

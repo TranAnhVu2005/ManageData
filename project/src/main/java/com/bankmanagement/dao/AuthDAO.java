@@ -21,7 +21,9 @@ public class AuthDAO {
      * @return Đối tượng UserAccount nếu thành công, null nếu thất bại.
      */
     public static UserAccount login(String phone, String password) {
-        String sql = "SELECT u.userId, u.userName, u.roleUser, u.passWordHash, a.numberAccount " +
+        // Lấy đủ thông tin cần thiết cho phiên làm việc: userId, tên, phân quyền,
+        // số điện thoại (để tạo tài khoản NH theo SĐT) và số TK đang active đầu tiên.
+        String sql = "SELECT u.userId, u.userName, u.roleUser, u.numberPhone, u.passWordHash, a.numberAccount " +
                 "FROM   USERACCOUNTS u " +
                 "LEFT JOIN ACCOUNTBANK a ON u.userId = a.userID AND a.state = 'Active' " +
                 "WHERE  u.numberPhone = ?";
@@ -37,6 +39,7 @@ public class AuthDAO {
                     user.setUserId(rs.getString("userId"));
                     user.setUserName(rs.getString("userName"));
                     user.setRoleUser(rs.getString("roleUser"));
+                    user.setNumberPhone(rs.getString("numberPhone"));
                     user.setNumberAccount(rs.getString("numberAccount"));
                     return user;
                 }

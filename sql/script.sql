@@ -206,39 +206,32 @@ create procedure updateInfo(
     IN p_birthDay date,
     IN p_numberPhone varchar(15),
     IN p_email varchar(100),
-    IN p_passwordHashOld varchar(200),
     IN p_passwordHashNew varchar(200),
     OUT p_result varchar(200)
 )
 begin
-	declare v_passwordHashOld varchar(200);
-    declare v_countUser int;
-    
     declare exit handler for sqlexception
     begin
 		set p_result = "Error";
     end;
     
-    SELECT passWordHash INTO v_passwordHashOld FROM USERACCOUNTS WHERE userID = p_userID;
-    SELECT COUNT(*) INTO v_countUser FROM USERACCOUNTS WHERE userID = p_userID;
-    
-    IF v_countUser = 0 THEN
-		set p_result = "Not found user";
-	ELSEIF p_passwordHashOld != v_passwordHashOld THEN
-		set p_result = "Incorrect password";
-	ELSE
-		UPDATE USERACCOUNTS SET
-			userName = COALESCE(p_userName, userName),
-            ID = COALESCE(p_ID, ID),
-            birthDay = COALESCE(p_birthDay, birthDay),
-            numberPhone = COALESCE(p_numberPhone, numberPhone),
-            email = COALESCE(p_email, email),
-            passWordHash = COALESCE(p_passwordHashNew, passWordHash)
-			WHERE userID = p_userID;
-		set p_result = "Success";
-	END IF;
+    UPDATE USERACCOUNTS SET
+        userName = COALESCE(p_userName, userName),
+        ID = COALESCE(p_ID, ID),
+        birthDay = COALESCE(p_birthDay, birthDay),
+        numberPhone = COALESCE(p_numberPhone, numberPhone),
+        email = COALESCE(p_email, email),
+        passWordHash = COALESCE(p_passwordHashNew, passWordHash)
+        WHERE userID = p_userID;
+
+    if ROW_COUNT() > 0 then
+        set p_result = "Success";
+    else
+        set p_result = "Not found user or no changes made";
+    end if;
 end$$
 delimiter ;
+select * from USERACCOUNTS;
 
 /*End Task 2: Update account* - Vũ */
 
@@ -247,13 +240,11 @@ delimiter ;
 delimiter $$
 create procedure withDrawMoney (
 	IN p_cardNumber char(16),
-    IN p_cardPinCodeHash varchar(64),
     IN p_amount decimal(15, 2),
     IN p_transactionId char(30),
-    OUT p_result INT # 0: success, 1: no card number, 2: wrong pin, 3: not enough balance, 4: error by server, 5: not authorization
+    OUT p_result INT # 0: success, 1: no card number, 3: not enough balance, 4: error by server, 5: not authorization
 )
 proc: begin
-	declare v_cardPinCodeHash varchar(64) default NULL;
     declare v_numberAccount varchar(10) default NULL;
     declare v_balance decimal(15, 2) default 0;
     declare v_role varchar(20) default NULL;
@@ -273,12 +264,12 @@ proc: begin
 		leave proc;
 	end if;
     
-    select cardPinCodeHash, numberAccount
-    into v_cardPinCodeHash, v_numberAccount
+    select numberAccount
+    into v_numberAccount
     from CARDS
     where cardNumber = p_cardNumber;
 
-    if v_cardPinCodeHash is null then
+    if v_numberAccount is null then
         set p_result = 1;
         LEAVE proc;
     END IF;
@@ -296,23 +287,7 @@ proc: begin
     INSERT INTO BANKTRANSACTIONS
     VALUES (p_transactionId, NOW(), p_amount, 'Processing', 'W001', v_numberAccount, v_numberAccount);
     
-    
     start transaction;
-    
-    select cardPinCodeHash
-    into v_cardPinCodeHash
-    from CARDS
-    where cardNumber = p_cardNumber
-    for update;
-    
-    if v_cardPinCodeHash <> p_cardPinCodeHash then
-		set p_result = 2;
-        rollback;
-        update BANKTRANSACTIONS
-			set stateOfTransaction = 'Cancel'
-			where transactionId = p_transactionId;
-        leave proc;
-	end if;
     
     select balance
     into v_balance
@@ -344,12 +319,10 @@ delimiter $$
 create procedure transferMoney(
 	in p_numberAccount varchar(10),
 	in p_destinationAccount varchar(10),
-	in p_pinCodeHash varchar(64),
     in p_amount decimal(15,2),
     out p_result varchar(200)
 )
 begin
-	declare v_pinCodeHash varchar(64);
     declare v_balance decimal(15,2);
     declare v_state enum("Active","Blocked");
     declare v_state_des enum("Active","Blocked");
@@ -359,7 +332,7 @@ begin
         set p_result = "Error transaction";
     end;
     
-    select pinCodeHash, balance, state into v_pinCodeHash, v_balance, v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
+    select balance, state into v_balance, v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
 	select state into v_state_des from ACCOUNTBANK where numberAccount = p_destinationAccount;
     IF v_state is null
     THEN set p_result ="Not found account";
@@ -369,8 +342,6 @@ begin
     THEN set p_result = "The account destination is not active";
     ELSEIF v_state!="Active"
     THEN set p_result = "This account is blocked";
-    ELSEIF p_pinCodeHash != v_pinCodeHash
-		THEN set p_result = "Incorrect pin code";
 	ELSEIF p_amount > v_balance 
 		THEN set p_result = "Not enough balance";
 	ELSE
@@ -407,34 +378,22 @@ delimiter ;
 delimiter $$
 create procedure checkBalance (
 	IN p_numberAccount varchar(10),
-    IN p_pinCodeHash varchar(64),
     OUT p_balance decimal(15, 2),
-    OUT p_result int # 0:success, 1:no account, 2:wrong pin, 3:blocked, 4: server error
+    OUT p_result int # 0:success, 1:no account, 3:blocked, 4: server error
 )
 proc: begin
-	declare v_pinCodeHash varchar(64) default NULL;
     DECLARE v_state ENUM('Active','Blocked');
-    DECLARE CONTINUE HANDLER FOR NOT FOUND
-	BEGIN
-		SET v_pinCodeHash = NULL;
-	END;
     
     set p_result = 4;
     set p_balance = null;
     
-    select pinCodeHash, state, balance
-    into v_pinCodeHash, v_state, p_balance
+    select state, balance
+    into v_state, p_balance
     from ACCOUNTBANK
     where numberAccount = p_numberAccount;
     
-    if v_pinCodeHash is null then
+    if v_state is null then
 		set p_result = 1;
-        set p_balance = NULL;
-        leave proc;
-	end if;
-    
-    if v_pinCodeHash <> p_pinCodeHash then
-		set p_result = 2;
         set p_balance = NULL;
         leave proc;
 	end if;
@@ -600,28 +559,24 @@ delimiter $$
  */
 create procedure changeAccountPin(
 	IN p_numberAccount varchar(10),
-    IN p_oldPinHash varchar(64),
     IN p_newPinHash varchar(64),
     OUT p_result varchar(200)
 )
 begin
     declare v_state enum("Active","Blocked");
-    declare v_pinCodeHash varchar(64);
     
     declare exit handler for sqlexception
     begin
 		set p_result = "Error";
     end;
     
-    -- Lấy trạng thái và mã PIN cũ từ database lên
-    SELECT state, pinCodeHash INTO v_state, v_pinCodeHash FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
+    -- Lấy trạng thái từ database lên
+    SELECT state INTO v_state FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
     
     IF v_state is null THEN
 		set p_result = "Not found account";
 	ELSEIF v_state != "Active" THEN
-		set p_result = "This account is blocked"; -- Bắt lỗi tài khoản bị khóa ở đây!
-	ELSEIF v_pinCodeHash != p_oldPinHash THEN
-		set p_result = "Incorrect old PIN";
+		set p_result = "This account is blocked";
 	ELSE
         -- Đủ điều kiện: Cập nhật sang mã PIN mới
 		UPDATE ACCOUNTBANK SET pinCodeHash = p_newPinHash WHERE numberAccount = p_numberAccount;
@@ -630,3 +585,127 @@ begin
 end$$
 delimiter ;
 /*End Task 10: Change Account PIN* - Vũ*/
+
+
+
+/*Start Task 12: Search transaction by date range* - Vũ*/
+delimiter $$
+/*
+ * searchTransactionByDate: Lọc lịch sử giao dịch của một tài khoản theo khoảng thời gian.
+ * Trả về ResultSet + OUT p_result để client phân biệt lỗi / thành công.
+ */
+create procedure searchTransactionByDate(
+    IN p_numberAccount varchar(10),
+    IN p_fromDate datetime,
+    IN p_toDate datetime,
+    OUT p_result varchar(200)
+)
+begin
+    declare v_state enum("Active","Blocked");
+
+    select state into v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
+
+    IF v_state is null THEN
+        set p_result = "Not found account";
+    ELSEIF v_state != "Active" THEN
+        set p_result = "This account is blocked";
+    ELSE
+        select transactionId, created_at, amount, stateOfTransaction,
+               typeOfTransactionCode, numberAccount, destinationAccount
+        from BANKTRANSACTIONS
+        where (numberAccount = p_numberAccount or destinationAccount = p_numberAccount)
+          and created_at between p_fromDate and p_toDate
+        order by created_at desc;
+        set p_result = "Success";
+    END IF;
+end$$
+delimiter ;
+/*End Task 12: Search transaction by date range* - Vũ*/
+
+
+
+/*Start Task 14: Search user by phone or ID* - Vũ*/
+delimiter $$
+/*
+ * searchUser: Tìm kiếm khách hàng theo số điện thoại hoặc số CCCD.
+ * Staff dùng để tra cứu thông tin khi cần hỗ trợ khách hàng.
+ */
+create procedure searchUser(
+    IN p_keyword varchar(100),
+    OUT p_result varchar(200)
+)
+begin
+    declare v_count int default 0;
+
+    select count(*) into v_count
+    from USERACCOUNTS
+    where numberPhone like concat('%', p_keyword, '%')
+       or ID like concat('%', p_keyword, '%');
+
+    if v_count = 0 then
+        set p_result = "Not found";
+    else
+        select userID, userName, ID, birthDay, numberPhone, email, roleUser
+        from USERACCOUNTS
+        where numberPhone like concat('%', p_keyword, '%')
+           or ID like concat('%', p_keyword, '%');
+        set p_result = "Success";
+    end if;
+end$$
+delimiter ;
+/*End Task 14: Search user by phone or ID* - Vũ*/
+
+
+
+/*Start Task 15: Get all bank transactions (Admin)* - Vũ*/
+delimiter $$
+/*
+ * getAllTransactions: Truy xuất toàn bộ lịch sử giao dịch trong hệ thống.
+ * Chỉ dành cho Staff — dùng để kiểm tra/báo cáo nghiệp vụ.
+ */
+create procedure getAllTransactions(
+    OUT p_result varchar(200)
+)
+begin
+    select transactionId, created_at, amount, stateOfTransaction,
+           typeOfTransactionCode, numberAccount, destinationAccount
+    from BANKTRANSACTIONS
+    order by created_at desc;
+    set p_result = "Success";
+end$$
+delimiter ;
+/*End Task 15: Get all bank transactions (Admin)* - Vũ*/
+
+
+
+/*Start Task 16: Unblock bank account* - Vũ*/
+delimiter $$
+/*
+ * unblockAccount: Mở khóa tài khoản ngân hàng đang ở trạng thái Blocked.
+ * Thực tế: Staff mới có quyền thực hiện thao tác này.
+ */
+create procedure unblockAccount(
+    IN p_numberAccount varchar(10),
+    OUT p_result varchar(200)
+)
+begin
+    declare v_state enum("Active","Blocked");
+
+    declare exit handler for sqlexception
+    begin
+        set p_result = "Error";
+    end;
+
+    select state into v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
+
+    IF v_state is null THEN
+        set p_result = "Not found account";
+    ELSEIF v_state = "Active" THEN
+        set p_result = "This account is already active";
+    ELSE
+        update ACCOUNTBANK set state = "Active" where numberAccount = p_numberAccount;
+        set p_result = "Success";
+    END IF;
+end$$
+delimiter ;
+/*End Task 16: Unblock bank account* - Vũ*/
