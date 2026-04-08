@@ -38,7 +38,7 @@ public class UserView {
                 case 2 -> new UserController(currentUser).transferMoney(bankAccounts);
                 case 3 -> new UserController(currentUser).checkTransaction(bankAccounts);
                 case 4 -> new UserController(currentUser).getBalance(bankAccounts);
-                case 5 -> System.out.println("[Withdraw Money - Task 3 - Loi]");
+                case 5 -> new UserController(currentUser).withdrawMoney();
                 case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);
                 case 7 -> new UserController(currentUser).viewProfile();
                 case 8 -> new UserController(currentUser).searchTransactionByDate(bankAccounts);
@@ -67,7 +67,7 @@ public class UserView {
         System.out.println("|  2.  Transfer money                |");
         System.out.println("|  3.  Transaction history           |");
         System.out.println("|  4.  Check balance                 |");
-        System.out.println("|  5.  Withdraw money    [Loi]       |");
+        System.out.println("|  5.  Withdraw money                |");
         System.out.println("|  6.  Create bank account           |");
         System.out.println("|  7.  View profile                  |");
         System.out.println("|  8.  Search transactions by date   |");
@@ -148,7 +148,7 @@ public class UserView {
 
         for (Map<String, Object> t : transactions) {
             String from = (String) t.get("numberAccount");
-            String to   = (String) t.getOrDefault("destinationAccount", "");
+            String to   = t.get("destinationAccount") != null ? (String) t.get("destinationAccount") : "";
 
             // Chiều giao dịch: OUT = tiền đi, IN = tiền đến
             String direction   = numberAccount.equals(from) ? "OUT" : "IN";

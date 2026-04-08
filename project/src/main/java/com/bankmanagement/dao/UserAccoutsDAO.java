@@ -279,6 +279,47 @@ public class UserAccoutsDAO {
     }
 
     /**
+     * [Task 7] Nạp tiền (Deposit) — Dành cho Admin/Staff thực hiện.
+     * Trả về int: 0=success, 1=no account, 2=server error, 5=not authorized.
+     */
+    public static int depositMoney(String staffAccount, String userAccount, String transactionId, double amount) {
+        String sql = "{call depositMoney(?,?,?,?,?)}";
+        try (Connection conn = dbConnection.getConnection();
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setString(1, staffAccount);
+            cs.setString(2, userAccount);
+            cs.setString(3, transactionId);
+            cs.setDouble(4, amount);
+            cs.registerOutParameter(5, Types.INTEGER);
+            cs.execute();
+            return cs.getInt(5);
+        } catch (SQLException e) {
+            System.out.println("[DAO] Error depositing money: " + e.getMessage());
+            return 2;
+        }
+    }
+
+    /**
+     * [Task 3] Rút tiền (Withdraw) — Dành cho Client sử dụng thẻ ngân hàng (CARDS).
+     * Trả về int: 0=success, 1=no card, 3=not enough balance, 4=error, 5=not authorized.
+     */
+    public static int withdrawMoney(String cardNumber, double amount, String transactionId) {
+        String sql = "{call withDrawMoney(?,?,?,?)}";
+        try (Connection conn = dbConnection.getConnection();
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setString(1, cardNumber);
+            cs.setDouble(2, amount);
+            cs.setString(3, transactionId);
+            cs.registerOutParameter(4, Types.INTEGER);
+            cs.execute();
+            return cs.getInt(4);
+        } catch (SQLException e) {
+            System.out.println("[DAO] Error withdrawing money: " + e.getMessage());
+            return 4;
+        }
+    }
+
+    /**
      * [Task 6] Lấy lịch sử giao dịch của một tài khoản.
      * Proc trả về cả ResultSet lẫn OUT param — cần đọc RS trước, sau đó mới đọc OUT.
      * Trả về null nếu tài khoản không tồn tại hoặc bị khóa (dùng resultStatus để kiểm tra).

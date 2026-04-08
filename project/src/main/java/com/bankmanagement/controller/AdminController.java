@@ -29,8 +29,8 @@ public class AdminController {
             printMenu();
             int choice = readInt();
             switch (choice) {
-                case 1 -> System.out.println("[Create Bank Account - Task 9 - Loi]");
-                case 2 -> System.out.println("[Deposit Money      - Task 7 - Loi]");
+                case 1 -> createBankAccount();
+                case 2 -> depositMoney();
                 case 3 -> blockAccount();
                 case 4 -> viewAllCustomers();
                 case 5 -> searchCustomer();
@@ -44,14 +44,97 @@ public class AdminController {
         System.out.println("\n+------------------------------------------+");
         System.out.printf("|  Staff: %-34s|%n", currentUser.getUserName());
         System.out.println("+------------------------------------------+");
-        System.out.println("|  1. Create bank account   [Loi]          |");
-        System.out.println("|  2. Deposit money         [Loi]          |");
+        System.out.println("|  1. Create bank account                  |");
+        System.out.println("|  2. Deposit money                        |");
         System.out.println("|  3. Block account                        |");
         System.out.println("|  4. View all customers                   |");
         System.out.println("|  5. Search customer                      |");
         System.out.println("|  0. Logout                               |");
         System.out.println("+------------------------------------------+");
         System.out.print("Choose: ");
+    }
+
+    // =========================================================================
+    // Task 9 — Tạo tài khoản ngân hàng (Lợi)
+    // =========================================================================
+
+    private void createBankAccount() {
+        System.out.println("\n+------ CREATE BANK ACCOUNT (ADMIN) ------+");
+        System.out.print("Enter Customer UserID: ");
+        String userId = sc.nextLine().trim();
+        if (userId.isEmpty()) {
+            System.out.println("! UserID cannot be empty.");
+            return;
+        }
+
+        System.out.print("Enter New Account Number (10 chars): ");
+        String accountNumber = sc.nextLine().trim();
+        if (accountNumber.length() != 10) {
+            System.out.println("! Account number must be exactly 10 characters.");
+            return;
+        }
+
+        System.out.print("Enter Initial PIN (6 digits): ");
+        String pin = sc.nextLine().trim();
+        if (!pin.matches("\\d{6}")) {
+            System.out.println("! PIN must be exactly 6 digits.");
+            return;
+        }
+
+        String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
+        int result = UserAccoutsDAO.createBankAccount(accountNumber, pinHash, userId);
+
+        switch (result) {
+            case 0 -> System.out.println("-> Bank account created successfully! Account number: " + accountNumber);
+            case 1 -> System.out.println("! User not found.");
+            case 2 -> System.out.println("! Server error. Please try again later.");
+            default -> System.out.println("! Account number conflict or limits reached.");
+        }
+    }
+
+    // =========================================================================
+    // Task 7 — Nạp tiền (Lợi)
+    // =========================================================================
+
+    private void depositMoney() {
+        BankAccount[] staffAccounts = UserAccoutsDAO.getActiveAccountByUserId(currentUser.getUserId());
+        if (staffAccounts == null || staffAccounts[0] == null) {
+            System.out.println("! You must create a Bank Account for yourself (Staff Account) before you can deposit money.");
+            return;
+        }
+        String staffAccount = staffAccounts[0].getNumberAccount();
+
+        System.out.println("\n+------ DEPOSIT MONEY ------+");
+        System.out.print("Enter Customer Account Number: ");
+        String targetAccount = sc.nextLine().trim();
+        if (targetAccount.isEmpty()) {
+            System.out.println("! Account number cannot be empty.");
+            return;
+        }
+
+        System.out.print("Enter Deposit Amount: ");
+        double amount = -1;
+        try {
+            amount = Double.parseDouble(sc.nextLine().trim());
+        } catch (NumberFormatException e) {
+            // Error caught below
+        }
+        
+        if (amount <= 0) {
+            System.out.println("! Amount must be greater than 0.");
+            return;
+        }
+
+        String transactionId = "D" + com.bankmanagement.function.generateStringRandom(8) + System.currentTimeMillis() % 10000;
+        int result = UserAccoutsDAO.depositMoney(staffAccount, targetAccount, transactionId, amount);
+
+        switch (result) {
+            case 0 -> System.out.println("-> Deposit successful! Amount added to: " + targetAccount);
+            case 1 -> System.out.println("! Account not found.");
+            case 2 -> System.out.println("! Server error. Transaction failed.");
+            case 5 -> System.out.println("! Authorization failed. You are not Staff.");
+            default -> System.out.println("! Unknown error.");
+        }
     }
 
     // =========================================================================

@@ -60,6 +60,46 @@ public class UserController {
     }
 
     // =========================================================================
+    // Task 3 — Rút tiền (Lợi)
+    // =========================================================================
+
+    public void withdrawMoney() {
+        System.out.println("\n+------ WITHDRAW MONEY ------+");
+        System.out.print("Enter 16-digit Card Number: ");
+        String cardNumber = sc.nextLine().trim();
+        
+        System.out.print("Enter Withdrawal Amount: ");
+        double amount = readDouble();
+        
+        if (cardNumber.length() != 16) {
+            System.out.println("! Card number must be 16 digits.");
+            return;
+        }
+        if (amount <= 0) {
+            System.out.println("! Amount must be greater than 0.");
+            return;
+        }
+
+        String pin = view.enterPin();
+        if (!UserAccoutsDAO.verifyCardPin(cardNumber, pin)) {
+            System.out.println("! Authentication failed. Incorrect Card PIN.");
+            return;
+        }
+
+        String transactionId = "W" + function.generateStringRandom(8) + System.currentTimeMillis() % 10000;
+        int result = UserAccoutsDAO.withdrawMoney(cardNumber, amount, transactionId);
+        
+        switch (result) {
+            case 0 -> System.out.println("-> Withdrawal successful! Please take your cash.");
+            case 1 -> System.out.println("! Card not found.");
+            case 3 -> System.out.println("! Not enough balance in the associated account.");
+            case 4 -> System.out.println("! Server error. Transaction failed.");
+            case 5 -> System.out.println("! Authorization failed. Account is not a Client.");
+            default -> System.out.println("! Unknown error.");
+        }
+    }
+
+    // =========================================================================
     // Task 5 — Kiểm tra số dư
     // =========================================================================
 

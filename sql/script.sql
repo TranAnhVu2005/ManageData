@@ -13,6 +13,9 @@ create table USERACCOUNTS (
     roleUser varchar(20) not null	
 );
 
+select * from useraccounts;
+update useraccounts set roleUser = "Admin" where userID = "U203469";
+
 /* 
  * Bảng AUDIT_LOG_USER: Lưu lại vết thay đổi thông tin định danh của khách hàng (CIF).
  * Thực tế: Ngân hàng không bao giờ xoá lịch sử khi đổi SĐT/Email để phòng chống gian lận.
@@ -139,8 +142,9 @@ delimiter ;
 
 DELIMITER $$
 
+
 CREATE PROCEDURE createBankAccount (
-    IN  p_numberAccount VARCHAR(10),
+    IN  p_numberAccount VARCHAR(12),
     IN  p_pinCodeHash   VARCHAR(64),
     IN  p_userID        VARCHAR(10),
     OUT p_result INT
@@ -232,7 +236,6 @@ begin
     end if;
 end$$
 delimiter ;
-select * from USERACCOUNTS;
 
 /*End Task 2: Update account* - Vũ */
 
@@ -657,4 +660,4 @@ delimiter ;
 /*End Task 12: Search user by phone or ID* - Vũ*/
 
 
-
+select * from useraccounts;
