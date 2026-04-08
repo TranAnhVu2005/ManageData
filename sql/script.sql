@@ -1,18 +1,54 @@
 create database MANAGEBANKACCOUNT;
 use MANAGEBANKACCOUNT;
-
 /*Start create and modify database*/
-create table USERACCOUNTS (
+create table USERACCOUNTS (	
 	userID varchar(10) primary key,
     userName varchar(200) not null,
     ID char(12) not null unique,
     passWordHash varchar(200) not null,
     birthDay date not null,
-    numberPhone varchar(15) not null unique,
+    numberPhone varchar(10) not null unique,
     email varchar(100) not null unique,
-    roleUser varchar(20) not null
+    roleUser varchar(20) not null	
 );
 
+/* 
+ * Bảng AUDIT_LOG_USER: Lưu lại vết thay đổi thông tin định danh của khách hàng (CIF).
+ * Thực tế: Ngân hàng không bao giờ xoá lịch sử khi đổi SĐT/Email để phòng chống gian lận.
+ * - actionType: Loại hành động (VD: 'Change Phone', 'Change Email').
+ * - oldValue: Dữ liệu cũ trước khi đổi.
+ * - newValue: Dữ liệu mới.
+ */
+create table AUDIT_LOG_USER (
+    logId int auto_increment primary key,
+    userID varchar(10) not null,
+    actionType varchar(50) not null,
+    oldValue varchar(500),
+    newValue varchar(500),
+    changedAt datetime default CURRENT_TIMESTAMP,
+    foreign key (userID) references USERACCOUNTS(userID) on update cascade on delete cascade
+);
+
+delimiter $$
+/* 
+ * Trigger log_user_update: Chạy SIÊU TỐC và TỰ ĐỘNG (AFTER UPDATE) mỗi khi bảng USERACCOUNTS bị đổi dữ liệu.
+ * - NEW: Dữ liệu mới truyền vào, OLD: Dữ liệu cũ đang nằm trong máy chủ.
+ * - Nếu phát hiện SĐT bị đổi (<>), tự động chèn 1 dòng log vào bảng AUDIT_LOG_USER.
+ */
+create trigger log_user_update
+after update on USERACCOUNTS
+for each row
+begin
+    if OLD.numberPhone <> NEW.numberPhone then
+        insert into AUDIT_LOG_USER (userID, actionType, oldValue, newValue)
+        values (NEW.userID, 'Change Phone', OLD.numberPhone, NEW.numberPhone);
+    end if;
+    if OLD.email <> NEW.email then
+        insert into AUDIT_LOG_USER (userID, actionType, oldValue, newValue)
+        values (NEW.userID, 'Change Email', OLD.email, NEW.email);
+    end if;
+end$$
+delimiter ;
 
 create table ACCOUNTBANK(
 	numberAccount varchar(10) primary key,
@@ -47,7 +83,7 @@ create table BANKTRANSACTIONS(
     stateOfTransaction enum("Processing", "Success", "Cancel") not null default "Processing",
     typeOfTransactionCode char(4) not null,
     numberAccount varchar(10) not null,
-    desinationAccount varchar(10),
+    destinationAccount varchar(10),
     foreign key (typeOfTransactionCode) references TYPEOFTRANSACTION(typeOfTransactionCode) on update cascade on delete cascade,
     foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade,
     foreign key  (destinationAccount) references accountbank(numberAccount) on update cascade on delete cascade
@@ -98,6 +134,68 @@ delimiter ;
 
 /*End Task 1: Create account* - Lợi*/
 
+/*Start Task 9: Create accountBank* - Lợi*/
+
+DELIMITER $$
+
+CREATE PROCEDURE createBankAccount (
+    IN  p_numberAccount VARCHAR(10),
+    IN  p_pinCodeHash   VARCHAR(64),
+    IN  p_userID        VARCHAR(10),
+    OUT p_result INT
+)
+proc: BEGIN
+
+    DECLARE v_exist INT DEFAULT 0;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_result = 2; -- server error
+    END;
+
+    SET p_result = 2;
+
+    START TRANSACTION;
+
+    -- 1. Kiểm tra user tồn tại
+    SELECT COUNT(*) INTO v_exist
+    FROM USERACCOUNTS
+    WHERE userID = p_userID;
+
+    IF v_exist = 0 THEN
+        SET p_result = 1;
+        ROLLBACK;
+        LEAVE proc;
+    END IF;
+
+    -- 2. Kiểm tra trùng số tài khoản
+    SELECT COUNT(*) INTO v_exist
+    FROM ACCOUNTBANK
+    WHERE numberAccount = p_numberAccount;
+
+    IF v_exist > 0 THEN
+        SET p_result = 3;
+        ROLLBACK;
+        LEAVE proc;
+    END IF;
+
+    -- 3. Insert
+    INSERT INTO ACCOUNTBANK
+    (numberAccount, userID, pinCodeHash,
+     balance, state, created_at)
+    VALUES
+    (p_numberAccount, p_userID, p_pinCodeHash,
+     0, 'Active', NOW());
+
+    SET p_result = 0; -- success
+    COMMIT;
+
+END$$
+DELIMITER ;
+
+/*End Task 9: Create accountBank* - Lợi*/
+
 
 /*Start Task 2: Update account* - Vũ*/
 delimiter $$
@@ -110,13 +208,10 @@ create procedure updateInfo(
     IN p_email varchar(100),
     IN p_passwordHashOld varchar(200),
     IN p_passwordHashNew varchar(200),
-    
-    IN p_numberAccount varchar(10),
     OUT p_result varchar(200)
 )
 begin
 	declare v_passwordHashOld varchar(200);
-    declare v_state varchar(10); 
     declare v_countUser int;
     
     declare exit handler for sqlexception
@@ -125,15 +220,12 @@ begin
     end;
     
     SELECT passWordHash INTO v_passwordHashOld FROM USERACCOUNTS WHERE userID = p_userID;
-	SELECT state INTO v_state FROM ACCOUNTBANK WHERE  numberAccount = p_numberAccount;
     SELECT COUNT(*) INTO v_countUser FROM USERACCOUNTS WHERE userID = p_userID;
     
     IF v_countUser = 0 THEN
 		set p_result = "Not found user";
 	ELSEIF p_passwordHashOld != v_passwordHashOld THEN
 		set p_result = "Incorrect password";
-	ELSEIF v_state != "Active" THEN
-		set p_result = "This account blocked!";
 	ELSE
 		UPDATE USERACCOUNTS SET
 			userName = COALESCE(p_userName, userName),
@@ -498,4 +590,43 @@ begin
 	END IF;
 end$$
 delimiter ;
-/*Start Task 8: Delete account* - Vũ*/
+/*End Task 8: Delete account* - Vũ*/
+
+/*Start Task 10: Change Account PIN* - Vũ*/
+delimiter $$
+/* 
+ * Stored Procedure changeAccountPin: Đổi mã PIN của Tài khoản Ngân hàng.
+ * Thuộc phạm trù ACCOUNTBANK -> Chỉ cho phép đổi PIN khi Tài Khoản Ngân Hàng đang 'Active'.
+ */
+create procedure changeAccountPin(
+	IN p_numberAccount varchar(10),
+    IN p_oldPinHash varchar(64),
+    IN p_newPinHash varchar(64),
+    OUT p_result varchar(200)
+)
+begin
+    declare v_state enum("Active","Blocked");
+    declare v_pinCodeHash varchar(64);
+    
+    declare exit handler for sqlexception
+    begin
+		set p_result = "Error";
+    end;
+    
+    -- Lấy trạng thái và mã PIN cũ từ database lên
+    SELECT state, pinCodeHash INTO v_state, v_pinCodeHash FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
+    
+    IF v_state is null THEN
+		set p_result = "Not found account";
+	ELSEIF v_state != "Active" THEN
+		set p_result = "This account is blocked"; -- Bắt lỗi tài khoản bị khóa ở đây!
+	ELSEIF v_pinCodeHash != p_oldPinHash THEN
+		set p_result = "Incorrect old PIN";
+	ELSE
+        -- Đủ điều kiện: Cập nhật sang mã PIN mới
+		UPDATE ACCOUNTBANK SET pinCodeHash = p_newPinHash WHERE numberAccount = p_numberAccount;
+		set p_result = "Success";
+	END IF;
+end$$
+delimiter ;
+/*End Task 10: Change Account PIN* - Vũ*/
