@@ -198,10 +198,10 @@ public class UserAccoutsDAO {
 
     public static Cards[] getCardsByUserId(String userId) {
         String sql = "SELECT c.cardNumber, c.cardPinCodeHash, c.secureCode, a.numberAccount " +
-                     "FROM CARDS c JOIN ACCOUNTBANK a ON c.numberAccount = a.numberAccount " +
-                     "WHERE a.userID = ? AND a.state = 'Active' AND c.expire_at > CURRENT_DATE";
+                "FROM CARDS c JOIN ACCOUNTBANK a ON c.numberAccount = a.numberAccount " +
+                "WHERE a.userID = ? AND a.state = 'Active' AND c.expire_at > CURRENT_DATE";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
             ResultSet rs = ps.executeQuery();
 
@@ -548,6 +548,25 @@ public class UserAccoutsDAO {
             System.out.println("[DAO] Error checking existence: " + e.getMessage());
         }
         return false;
+    }
+
+    public static Map<String, String> getSystemStatistics() {
+        String sql = "call getSystemStatistics(?,?,?)";
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement cs = conn.prepareCall(sql)) {
+            cs.registerOutParameter(1, Types.VARCHAR);
+            cs.registerOutParameter(2, Types.VARCHAR);
+            cs.registerOutParameter(3, Types.VARCHAR);
+            cs.execute();
+            Map<String, String> stats = new HashMap<>();
+            stats.put("totalUsers", cs.getString(1));
+            stats.put("totalAccounts", cs.getString(2));
+            stats.put("totalBalance", cs.getString(3));
+            return stats;
+        } catch (SQLException e) {
+            System.out.println("[DAO] Error fetching system statistics: " + e.getMessage());
+        }
+        return new HashMap<>();
     }
 
     // =========================================================================

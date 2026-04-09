@@ -716,3 +716,21 @@ end$$
 delimiter ;
 /*End Task: Create Card for Account* - Loi*/
 
+/*Statistics total money in system*/
+delimiter $$
+create procedure getSystemStatistics(
+    OUT p_totalBalance double,
+    OUT p_totalUsers int,
+    OUT p_totalAccounts int
+)
+begin
+    start transaction;
+
+    select sum(balance) into p_totalBalance from ACCOUNTBANK;
+    select count(*) into p_totalUsers from USERACCOUNTS;
+    select count(*) into p_totalAccounts from ACCOUNTBANK;
+
+    commit;
+end$$
+delimiter ;
+/*End Statistics total money in system*/

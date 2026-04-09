@@ -36,6 +36,7 @@ public class AdminController {
                 case 3 -> blockAccount();
                 case 4 -> viewAllCustomers();
                 case 5 -> searchCustomer();
+                case 6 -> viewSystemStatistics();
                 case 0 -> {
                     System.out.println("Logged out!");
                     return;
@@ -54,9 +55,31 @@ public class AdminController {
         System.out.println("|  3. Block account                        |");
         System.out.println("|  4. View all customers                   |");
         System.out.println("|  5. Search customer                      |");
+        System.out.println("|  6. View system statistics               |");
         System.out.println("|  0. Logout                               |");
         System.out.println("+------------------------------------------+");
         System.out.print("Choose: ");
+    }
+
+    private void viewSystemStatistics() {
+        System.out.println("\n--- SYSTEM STATISTICS ---");
+        Map<String, String> stats = UserAccoutsDAO.getSystemStatistics();
+        if (stats == null || stats.isEmpty()) {
+            System.out.println("! Unable to fetch system statistics.");
+            return;
+        }
+        System.out.println("Total Users: " + stats.getOrDefault("totalUsers", "N/A"));
+        System.out.println("Total Bank Accounts: " + stats.getOrDefault("totalAccounts", "N/A"));
+        System.out.println("Total Balance in System: " + stats.getOrDefault("totalBalance", "N/A"));
+        while (true) {
+            System.out.println("Want to exist? (Y)");
+            String choice = sc.nextLine().trim().toUpperCase();
+            if (choice.equals("Y")) {
+                break;
+            } else {
+                System.out.println("! Invalid choice.");
+            }
+        }
     }
 
     // =========================================================================
