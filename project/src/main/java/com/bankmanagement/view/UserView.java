@@ -3,6 +3,7 @@ package com.bankmanagement.view;
 import com.bankmanagement.controller.UserController;
 import com.bankmanagement.dao.UserAccoutsDAO;
 import com.bankmanagement.model.BankAccount;
+import com.bankmanagement.model.Cards;
 import com.bankmanagement.model.UserAccount;
 
 import java.nio.charset.StandardCharsets;
@@ -103,6 +104,20 @@ public class UserView {
         for (BankAccount acc : bankAccounts) {
             if (acc != null) {
                 System.out.printf("  %-6d | %-12s%n", i++, acc.getNumberAccount());
+            }
+        }
+        System.out.println("  0      | Exit");
+        System.out.print("Choose: ");
+    }
+
+    public void showCardsMenu(Cards[] cards) {
+        int i = 1;
+        System.out.println("\nYour active cards:");
+        System.out.printf("  %-6s | %-20s%n", "No.", "Card Number");
+        System.out.println("  " + "-".repeat(30));
+        for (Cards card : cards) {
+            if (card != null) {
+                System.out.printf("  %-6d | %-20s%n", i++, card.getCardNumber());
             }
         }
         System.out.println("  0      | Exit");
@@ -313,6 +328,17 @@ public class UserView {
             case 1 -> System.out.println("! Account not found. Please contact support.");
             case 2 -> System.out.println("! Server error. Please try again later.");
             default -> System.out.println("! Unknown error. Please contact support." + result);
+        }
+    }
+
+    public void showWithdrawResult(int result) {
+        switch (result) {
+            case 0 -> System.out.println("Withdrawal successful! Please take your cash.");
+            case 1 -> System.out.println("! Card not found.");
+            case 3 -> System.out.println("! Not enough balance in the associated account.");
+            case 4 -> System.out.println("! Server error. Transaction failed.");
+            case 5 -> System.out.println("! Authorization failed. Account is not a Client.");
+            default -> System.out.println("! Unknown error.");
         }
     }
 }

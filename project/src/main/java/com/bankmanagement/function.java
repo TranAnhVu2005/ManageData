@@ -5,7 +5,7 @@ import java.security.SecureRandom;
 import com.bankmanagement.dao.UserAccoutsDAO;
 
 public class function {
-    public static String generateStringRandom(int length, String tableName, String columnName) {
+    public static String generateStringRandom(int length, String tableName, String columnName, String prefix) {
         SecureRandom random = new SecureRandom();
 
         while (true) {
@@ -18,6 +18,9 @@ public class function {
                 result.append(random.nextInt(10));
             }
 
+            if (prefix != null) {
+                result.insert(0, prefix);
+            }
             String generated = result.toString();
 
             // nếu không cần check DB

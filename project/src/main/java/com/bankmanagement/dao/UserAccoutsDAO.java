@@ -3,12 +3,15 @@ package com.bankmanagement.dao;
 import com.bankmanagement.config.dbConnection;
 import com.bankmanagement.model.BankAccount;
 import com.bankmanagement.model.UserAccount;
+import com.bankmanagement.model.Cards;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.smartcardio.Card;
 
 /**
  * DAO trung tâm — xử lý toàn bộ truy vấn liên quan đến tài khoản người dùng và
@@ -189,6 +192,32 @@ public class UserAccoutsDAO {
             return accounts;
         } catch (SQLException e) {
             System.out.println("[DAO] Error fetching accounts: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public static Cards[] getCardsByUserId(String userId) {
+        String sql = "SELECT c.cardNumber, c.cardPinCodeHash, c.secureCode, a.numberAccount " +
+                     "FROM CARDS c JOIN ACCOUNTBANK a ON c.numberAccount = a.numberAccount " +
+                     "WHERE a.userID = ? AND a.state = 'Active' AND c.expire_at > CURRENT_DATE";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            Cards[] cards = new Cards[10];
+            int index = 0;
+            while (rs.next() && index < cards.length) {
+                Cards card = new Cards();
+                card.setCardNumber(rs.getString("cardNumber"));
+                card.setCardPinCodeHash(rs.getString("cardPinCodeHash"));
+                card.setSecureCode(rs.getString("secureCode"));
+                card.setNumberAccount(rs.getString("numberAccount"));
+                cards[index++] = card;
+            }
+            return cards;
+        } catch (SQLException e) {
+            System.out.println("[DAO] Error fetching cards: " + e.getMessage());
         }
         return null;
     }

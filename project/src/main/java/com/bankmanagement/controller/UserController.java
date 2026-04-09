@@ -5,6 +5,7 @@ import com.bankmanagement.function;
 import com.bankmanagement.config.dbConnection;
 import com.bankmanagement.model.BankAccount;
 import com.bankmanagement.model.UserAccount;
+import com.bankmanagement.model.Cards;
 import com.bankmanagement.view.UserView;
 
 import java.nio.charset.StandardCharsets;
@@ -12,6 +13,8 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+
+import javax.smartcardio.Card;
 
 /**
  * Xử lý toàn bộ nghiệp vụ dành cho người dùng Client sau khi đăng nhập.
@@ -47,7 +50,7 @@ public class UserController {
     }
 
     private void createBankAccountRandom() {
-        String newAccountNumber = function.generateStringRandom(10, "accountBank", "numberAccount");
+        String newAccountNumber = function.generateStringRandom(10, "accountBank", "numberAccount", null);
         String pin = view.getPinCode();
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
         int result = UserAccoutsDAO.createBankAccount(newAccountNumber, pinHash, currentUser.getUserId());
@@ -56,7 +59,7 @@ public class UserController {
 
     private void createBankAccountWithPhone() {
         // Số tài khoản = SĐT + 2 chữ số ngẫu nhiên (đảm bảo dễ nhớ)
-        String newAccountNumber = currentUser.getNumberPhone().substring(2) + function.generateStringRandom(2, null, null);
+        String newAccountNumber = currentUser.getNumberPhone().substring(2) + function.generateStringRandom(2, null, null, null);
         String pin = view.getPinCode();
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
         int result = UserAccoutsDAO.createBankAccount(newAccountNumber, pinHash, currentUser.getUserId());
@@ -69,38 +72,35 @@ public class UserController {
 
     public void withdrawMoney() {
         System.out.println("\n+------ WITHDRAW MONEY ------+");
-        System.out.print("Enter 16-digit Card Number: ");
-        String cardNumber = sc.nextLine().trim();
-
-        System.out.print("Enter Withdrawal Amount: ");
-        double amount = readDouble();
-
-        if (cardNumber.length() != 16) {
-            System.out.println("! Card number must be 16 digits.");
+        Cards[] cards = UserAccoutsDAO.getCardsByUserId(currentUser.getUserId());
+        if (cards == null || cards.length == 0) {
+            System.out.println("! You don't have any active card to withdraw from.");
             return;
         }
-        if (amount <= 0) {
-            System.out.println("! Amount must be greater than 0.");
+        view.showCardsMenu(cards);
+        System.out.print("Select card to withdraw from: ");
+        int choice = readInt();
+        if (choice == 0)
             return;
-        }
 
+        Cards selectedCard = cards[choice - 1];
+        String cardNumber = selectedCard.getCardNumber();
         String pin = view.enterPin();
         if (!UserAccoutsDAO.verifyCardPin(cardNumber, pin)) {
             System.out.println("! Authentication failed. Incorrect Card PIN.");
             return;
         }
+        System.out.print("Enter Withdrawal Amount: ");
+        double amount = readDouble();
 
-        String transactionId = "W" + function.generateStringRandom(8, null, null) + System.currentTimeMillis() % 10000;
-        int result = UserAccoutsDAO.withdrawMoney(cardNumber, amount, transactionId);
-
-        switch (result) {
-            case 0 -> System.out.println("-> Withdrawal successful! Please take your cash.");
-            case 1 -> System.out.println("! Card not found.");
-            case 3 -> System.out.println("! Not enough balance in the associated account.");
-            case 4 -> System.out.println("! Server error. Transaction failed.");
-            case 5 -> System.out.println("! Authorization failed. Account is not a Client.");
-            default -> System.out.println("! Unknown error.");
+        if (amount <= 0) {
+            System.out.println("! Amount must be greater than 0.");
+            return;
         }
+
+        String transactionId = function.generateStringRandom(29, null, null, "W"); // Mã giao dịch bắt đầu bằng 'W' để dễ phân biệt
+        int result = UserAccoutsDAO.withdrawMoney(cardNumber, amount, transactionId);
+        view.showWithdrawResult(result);
     }
 
     // =========================================================================
@@ -446,8 +446,8 @@ public class UserController {
                 break;
             }           
         }
-        String cardNumber = function.generateStringRandom(16, "Cards", "cardNumber");
-        String ccv = function.generateStringRandom(3, null, null);
+        String cardNumber = function.generateStringRandom(16, "Cards", "cardNumber", null);
+        String ccv = function.generateStringRandom(3, null, null, null);
         int result = UserAccoutsDAO.createCard(cardNumber, selected.getNumberAccount(), pin, ccv);
         view.showCreateCardResult(result, cardNumber);
     }

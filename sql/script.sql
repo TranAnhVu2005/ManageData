@@ -15,7 +15,27 @@ create table USERACCOUNTS (
 
 select * from useraccounts;
 update useraccounts set roleUser = "Admin" where userID = "U203469";
-
+#Tài khoản Nhân viên chèn cứng mk: 123456
+INSERT INTO USERACCOUNTS
+(userID, userName, ID, passWordHash, birthDay, numberPhone, email, roleUser)
+VALUES (
+    "STAFF00001",
+    "Van Teo",
+    "111111111111",
+    "$2a$10$BuHGpV5BogFkqHpYz0H0sO2unKxmx/cLqd2EDM4VI.g7v.Zk2fYYq",
+    "2000-12-12",
+    "0123456789",
+    "vanteo@gmail.com",
+    "Staff"
+);
+INSERT INTO ACCOUNTBANK
+(numberAccount, userID, pinCodeHash, balance)
+VALUES (
+    "0000000001",
+    "STAFF00001",
+    "$2a$10$BuHGpV5BogFkqHpYz0H0sO2unKxmx/cLqd2EDM4VI.g7v.Zk2fYYq",
+    0
+);
 /* 
  * Bảng AUDIT_LOG_USER: Lưu lại vết thay đổi thông tin định danh của khách hàng (CIF).
  * Thực tế: Ngân hàng không bao giờ xoá lịch sử khi đổi SĐT/Email để phòng chống gian lận.
@@ -440,7 +460,6 @@ delimiter ;
 /*End Task 6: Check transaction* - Vũ*/
 
 
-
 /*Start Task 7: Deposit money into an account * - Lợi*/
 delimiter $$
 create procedure depositMoney (
@@ -514,7 +533,7 @@ proc: begin
     WHERE numberAccount = p_numberAccountUser;
 
     IF ROW_COUNT() = 0 THEN
-        SET p_result = 1;
+        SET p_result = 2;
         ROLLBACK;
         update BANKTRANSACTIONS
 			set stateOfTransaction = 'Cancel'
@@ -524,6 +543,7 @@ proc: begin
 		update BANKTRANSACTIONS
 			set stateOfTransaction = 'Success'
 			where transactionId = p_transactionId;
+        set p_result = 0;
     END IF;
     
     commit;
