@@ -1,6 +1,6 @@
 package com.bankmanagement.model;
 
-class TypeOfTransaction {
+public class TypeOfTransaction {
     private String typeOfTransactionCode;
     private String nameTypeOfTransaction;
     private String description;

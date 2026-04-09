@@ -66,7 +66,7 @@ public class AuthDAO {
             String phone,
             String email) {
 
-        String sql = "{call createUserAccount(?,?,?,?,?,?,?,?)}";
+        String sql = "{call createUserAccount(?,?,?,?,?,?,?,?,?)}";
 
         try (Connection conn = dbConnection.getConnection();
                 CallableStatement cs = conn.prepareCall(sql)) {
@@ -79,9 +79,15 @@ public class AuthDAO {
             cs.setString(6, phone);
             cs.setString(7, email);
             cs.setString(8, "Client");
+            cs.registerOutParameter(9, java.sql.Types.VARCHAR);
 
             cs.execute();
-            return "Success";
+            String result = cs.getString(9);
+            if (result != null && result.equalsIgnoreCase("Success")) {
+                return "Success";
+            } else {
+                return "Error: " + (result != null ? result : "Unknown database error");
+            }
 
         } catch (SQLException e) {
             if (e.getMessage().contains("Duplicate"))

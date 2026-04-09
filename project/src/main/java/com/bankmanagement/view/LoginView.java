@@ -1,6 +1,5 @@
 package com.bankmanagement.view;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 /**
@@ -8,86 +7,62 @@ import java.util.Scanner;
  */
 public class LoginView {
 
-    // Sử dụng bộ mã UTF-8 để hỗ trợ nhận diện Tiếng Việt từ bàn phím
-    private Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+    private final Scanner sc = new Scanner(System.in);
 
-    /**
-     * Hiển thị danh mục thao tác chính của hệ thống.
-     */
     public void showMainMenu() {
         System.out.println();
         System.out.println("==================================");
         System.out.println("        BANK MANAGEMENT           ");
         System.out.println("==================================");
-        System.out.println("  1. Login");
-        System.out.println("  2. Register new account");
+        System.out.println("  1. Login to system");
+        System.out.println("  2. Create Account (Register)");
         System.out.println("  0. Exit");
         System.out.println("==================================");
-        System.out.print("Choose: ");
+        System.out.print("Your Choice: ");
     }
 
     public void showSuccess(String message) {
-        System.out.println("[Success] " + message);
+        System.out.println("[SUCCESS] " + message);
     }
 
     public void showError(String message) {
-        System.out.println("[Error] " + message);
-    }
-
-    private String readPassword(String prompt) {
-        if (System.console() != null) {
-            char[] pwd = System.console().readPassword(prompt);
-            return pwd != null ? new String(pwd).trim() : "";
-        } else {
-            System.out.print(prompt);
-            return sc.nextLine().trim();
-        }
+        System.out.println("[ERROR] " + message);
     }
 
     public String[] getLoginInput() {
         System.out.println("\n--- LOGIN ---");
-        System.out.print("Phone number   : ");
+        System.out.print("Phone number: ");
         String account = sc.nextLine().trim();
-        String password = readPassword("Password       : ");
-        return new String[] { account, password };
+        System.out.print("Password: ");
+        String password = sc.nextLine().trim();
+        return new String[]{account, password};
     }
 
-    /**
-     * Lấy các thông tin cần thiết từ người dùng để bắt đầu quy trình đăng ký 1 tài khoản mới.
-     * @return Mảng dữ liệu lần lượt: Tên, CCCD, Ngày Sinh, SĐT, Email, Password, ConfirmPassword
-     */
     public String[] getRegisterInput() {
         System.out.println("\n--- REGISTER ACCOUNT ---");
-
-        System.out.print("Full Name              : ");
+        System.out.print("Full Name: ");
         String userName = sc.nextLine().trim();
-
-        System.out.print("Identity Card (12 num) : ");
+        System.out.print("Identity Card (12 digits): ");
         String id = sc.nextLine().trim();
-
-        System.out.print("Date of Birth (y-m-d)  : ");
+        System.out.print("Birth Date (yyyy-MM-dd): ");
         String birthDay = sc.nextLine().trim();
-
-        System.out.print("Phone Number (10 num)  : ");
+        System.out.print("Phone Number: ");
         String phone = sc.nextLine().trim();
-
-        System.out.print("Email                  : ");
+        System.out.print("Email: ");
         String email = sc.nextLine().trim();
+        System.out.print("Password (min 6 chars): ");
+        String password = sc.nextLine().trim();
+        System.out.print("Confirm Password: ");
+        String confirm = sc.nextLine().trim();
 
-        String password = readPassword("Password               : ");
-
-        String confirm = readPassword("Confirm Password       : ");
-
-        return new String[] {
-                userName, id, birthDay, phone, email, password, confirm
-        };
+        return new String[]{userName, id, birthDay, phone, email, password, confirm};
     }
 
     public int getChoice() {
         try {
             return Integer.parseInt(sc.nextLine().trim());
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             return -1;
         }
     }
-}
+}

@@ -1,26 +1,21 @@
 package com.bankmanagement.controller;
 
-import com.bankmanagement.dao.UserAccoutsDAO;
+import com.bankmanagement.dao.AdminDAO;
+import com.bankmanagement.dao.UserAccountsDAO;
 import com.bankmanagement.model.UserAccount;
-import com.bankmanagement.model.BankAccount;
+import com.bankmanagement.view.AdminView;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 /**
- * Xử lý toàn bộ nghiệp vụ quản trị dành cho tài khoản Staff.
- *
- * Staff có thể: Khóa/Mở khóa tài khoản, xem danh sách khách hàng,
- * tìm kiếm, xem toàn bộ giao dịch hệ thống.
- * Các chức năng Tạo tài khoản (Task 9) và Nạp tiền (Task 7) do Lợi cài đặt
- * riêng.
+ * Xử lý nghiệp vụ quản trị dành cho Staff.
+ * Đã được refactor sang chuẩn MVC (Model-View-Controller) và sử dụng AdminDAO chuyên biệt.
  */
 public class AdminController {
 
     private final UserAccount currentUser;
-    private final Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+    private final AdminView view = new AdminView();
 
     public AdminController(UserAccount user) {
         this.currentUser = user;
@@ -28,283 +23,144 @@ public class AdminController {
 
     public void showMenu() {
         while (true) {
-            printMenu();
-            int choice = readInt();
+            view.showMenu(currentUser);
+            int choice = view.getChoice();
             switch (choice) {
-                case 1 -> createBankAccount();
-                case 2 -> depositMoney();
-                case 3 -> blockAccount();
-                case 4 -> viewAllCustomers();
-                case 5 -> searchCustomer();
-                case 6 -> unblockAccount();
-                case 7 -> viewAuditLogs();
-                case 8 -> viewSystemStatistics();
+                case 1 -> depositMoney();
+                case 2 -> blockAccount();
+                case 3 -> unblockAccount();
+                case 4 -> searchCustomer();
+                case 5 -> viewAuditLogs();
+                case 6 -> viewSystemStatistics();
+                case 7 -> updateProfile();
+                case 8 -> viewAllCustomers();
                 case 0 -> {
-                    System.out.println("Logged out!");
+                    view.showMessage("Logging out...");
                     return;
                 }
-                default -> System.out.println("! Invalid choice.");
+                default -> view.showError("Invalid choice!");
             }
         }
     }
 
-    private void printMenu() {
-        System.out.println("\n+------------------------------------------+");
-        System.out.printf("|  Staff: %-34s|%n", currentUser.getUserName());
-        System.out.println("+------------------------------------------+");
-        System.out.println("|  1. Create bank account                  |");
-        System.out.println("|  2. Deposit money                        |");
-        System.out.println("|  3. Block account                        |");
-        System.out.println("|  4. View all customers                   |");
-        System.out.println("|  5. Search customer                      |");
-        System.out.println("|  6. Unblock account                      |");
-        System.out.println("|  7. View AuditLogs                       |");
-        System.out.println("|  8. View system statistics               |");
-        System.out.println("|  0. Logout                               |");
-        System.out.println("+------------------------------------------+");
-        System.out.print("Choose: ");
+    private void updateProfile() {
+        String[] input = view.getUpdateProfileInput();
+        String name = input[0];
+        String phone = input[1];
+        String email = input[2];
+        String pass = input[3];
+
+        String passHash = null;
+        if (!pass.isEmpty()) {
+            if (pass.length() < 6) {
+                view.showError("Password must be at least 6 characters!");
+                return;
+            }
+            passHash = org.mindrot.jbcrypt.BCrypt.hashpw(pass, org.mindrot.jbcrypt.BCrypt.gensalt());
+        }
+
+        String result = UserAccountsDAO.updateInfo(currentUser.getUserId(), name, null, null, phone, email, passHash);
+        if ("Success".equals(result)) {
+            view.showSuccess("Profile updated successfully!");
+            if (!name.isEmpty()) currentUser.setUserName(name);
+            AdminDAO.logStaffAction(currentUser.getUserId(), "Update Self Profile", "Changed basic info/password");
+        } else {
+            view.showError(result);
+        }
     }
 
     private void viewSystemStatistics() {
-        System.out.println("\n--- SYSTEM STATISTICS ---");
-        Map<String, String> stats = UserAccoutsDAO.getSystemStatistics();
-        if (stats == null || stats.isEmpty()) {
-            System.out.println("! Unable to fetch system statistics.");
+        Map<String, String> stats = AdminDAO.getSystemStatistics();
+        if (stats.isEmpty()) {
+            view.showError("Unable to fetch system statistics.");
             return;
         }
-        System.out.println("Total Users: " + stats.getOrDefault("totalUsers", "N/A"));
-        System.out.println("Total Bank Accounts: " + stats.getOrDefault("totalAccounts", "N/A"));
-        System.out.println("Total Balance in System: " + stats.getOrDefault("totalBalance", "N/A"));
-        while (true) {
-            System.out.println("Want to exist? (Y)");
-            String choice = sc.nextLine().trim().toUpperCase();
-            if (choice.equals("Y")) {
-                break;
-            } else {
-                System.out.println("! Invalid choice.");
-            }
-        }
+        view.displayStats(stats);
     }
-
-    // =========================================================================
-    // Task 9 — Tạo tài khoản ngân hàng (Lợi)
-    // =========================================================================
-
-    private void createBankAccount() {
-        System.out.println("\n+------ CREATE BANK ACCOUNT (ADMIN) ------+");
-        System.out.print("Enter Customer UserID: ");
-        String userId = sc.nextLine().trim();
-        if (userId.isEmpty()) {
-            System.out.println("! UserID cannot be empty.");
-            return;
-        }
-
-        System.out.print("Enter New Account Number (10 chars): ");
-        String accountNumber = sc.nextLine().trim();
-        if (accountNumber.length() != 10) {
-            System.out.println("! Account number must be exactly 10 characters.");
-            return;
-        }
-
-        System.out.print("Enter Initial PIN (6 digits): ");
-        String pin = sc.nextLine().trim();
-        if (!pin.matches("\\d{6}")) {
-            System.out.println("! PIN must be exactly 6 digits.");
-            return;
-        }
-
-        String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
-        int result = UserAccoutsDAO.createBankAccount(accountNumber, pinHash, userId);
-
-        switch (result) {
-            case 0 -> System.out.println("-> Bank account created successfully! Account number: " + accountNumber);
-            case 1 -> System.out.println("! User not found.");
-            case 2 -> System.out.println("! Server error. Please try again later.");
-            default -> System.out.println("! Account number conflict or limits reached.");
-        }
-    }
-
-    // =========================================================================
-    // Task 7 — Nạp tiền (Lợi)
-    // =========================================================================
 
     private void depositMoney() {
-        BankAccount[] staffAccounts = UserAccoutsDAO.getActiveAccountByUserId(currentUser.getUserId());
-        if (staffAccounts == null || staffAccounts[0] == null) {
-            System.out.println(
-                    "! You must create a Bank Account for yourself (Staff Account) before you can deposit money.");
-            return;
-        }
-        String staffAccount = staffAccounts[0].getNumberAccount();
-
-        System.out.println("\n+------ DEPOSIT MONEY ------+");
-        System.out.print("Enter Customer Account Number: ");
-        String targetAccount = sc.nextLine().trim();
-        if (targetAccount.isEmpty()) {
-            System.out.println("! Account number cannot be empty.");
-            return;
-        }
-
-        System.out.print("Enter Deposit Amount: ");
-        double amount = -1;
+        String[] input = view.getDepositInput();
+        String targetAccount = input[0];
+        double amount;
         try {
-            amount = Double.parseDouble(sc.nextLine().trim());
+            amount = Double.parseDouble(input[1]);
+            if (amount <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            System.out.println("! Invalid amount format.");
+            view.showError("Invalid amount.");
             return;
         }
 
-        if (amount <= 0) {
-            System.out.println("! Amount must be greater than 0.");
-            return;
-        }
-
-        String transactionId = com.bankmanagement.function.generateStringRandom(29, null, null, "D"); // Mã giao dịch
-                                                                                                      // bắt đầu bằng
-                                                                                                      // 'D' để dễ phân
-                                                                                                      // biệt
-        int result = UserAccoutsDAO.depositMoney(staffAccount, targetAccount, transactionId, amount);
+        String transactionId = "D" + System.currentTimeMillis(); 
+        int result = AdminDAO.depositMoney(currentUser.getUserId(), targetAccount, transactionId, amount);
 
         switch (result) {
-            case 0 -> System.out.println("-> Deposit successful! Amount added to: " + targetAccount);
-            case 1 -> System.out.println("! Account not found.");
-            case 2 -> System.out.println("! Server error. Transaction failed.");
-            case 5 -> System.out.println("! Authorization failed. You are not Staff.");
-            default -> System.out.println("! Unknown error.");
+            case 0 -> {
+                view.showSuccess("Deposit successful to " + targetAccount);
+                AdminDAO.logStaffAction(currentUser.getUserId(), "Deposit", "Amount: " + amount + " to " + targetAccount);
+            }
+            case 1 -> view.showError("Target account not found.");
+            default -> view.showError("Transaction failed.");
         }
     }
-
-    // =========================================================================
-    // Task 8 — Khóa tài khoản ngân hàng
-    // =========================================================================
 
     private void blockAccount() {
-        System.out.println("\n--- BLOCK ACCOUNT ---");
-        System.out.print("Account number to block: ");
-        String numberAccount = sc.nextLine().trim();
-        if (numberAccount.isEmpty()) {
-            System.out.println("! Account number cannot be empty.");
-            return;
+        String account = view.getAccountNumber("block");
+        if (account.isEmpty()) return;
+        String result = AdminDAO.blockAccount(account);
+        if ("Success".equals(result)) {
+            view.showSuccess("Account " + account + " blocked.");
+            AdminDAO.logStaffAction(currentUser.getUserId(), "Block Account", "Account: " + account);
+        } else {
+            view.showError(result);
         }
-        String result = UserAccoutsDAO.blockAccount(numberAccount);
-        System.out.println("-> " + result);
     }
 
-    // =========================================================================
-    // Task 13 — Mở tài khoản ngân hàng
-    // =========================================================================
     private void unblockAccount() {
-        System.out.println("\n--- UNBLOCK ACCOUNT ---");
-        System.out.print("Account number to unblock: ");
-        String numberAccount = sc.nextLine().trim();
-        if (numberAccount.isEmpty()) {
-            System.out.println("! Account number cannot be empty.");
-            return;
+        String account = view.getAccountNumber("unblock");
+        if (account.isEmpty()) return;
+        String result = AdminDAO.unblockAccount(account);
+        if ("Success".equals(result)) {
+            view.showSuccess("Account " + account + " unblocked.");
+            AdminDAO.logStaffAction(currentUser.getUserId(), "Unblock Account", "Account: " + account);
+        } else {
+            view.showError(result);
         }
-        String result = UserAccoutsDAO.unblockAccount(numberAccount);
-        System.out.println("-> " + result);
     }
-
-    // =========================================================================
-    // Xem danh sách toàn bộ khách hàng
-    // =========================================================================
 
     private void viewAllCustomers() {
-        System.out.println("\n--- ALL CUSTOMERS ---");
-        List<Map<String, String>> users = UserAccoutsDAO.getAllUsers();
-        if (users.isEmpty()) {
-            System.out.println("No customers found.");
-            return;
-        }
-        printUserTable(users);
+        List<Map<String, String>> users = AdminDAO.getAllUsers();
+        view.displayUsers(users);
     }
 
-    // =========================================================================
-    // Task 12 — Tìm kiếm khách hàng theo SĐT hoặc CCCD
-    // =========================================================================
-
     private void searchCustomer() {
-        System.out.println("\n--- SEARCH CUSTOMER ---");
-        System.out.print("Enter phone number or ID card: ");
-        String keyword = sc.nextLine().trim();
-        if (keyword.isEmpty()) {
-            System.out.println("! Search keyword cannot be empty.");
-            return;
-        }
+        String keyword = view.getSearchKeyword();
+        if (keyword.isEmpty()) return;
 
         String[] status = new String[1];
-        List<Map<String, String>> users = UserAccoutsDAO.searchUser(keyword, status);
+        List<Map<String, String>> users = AdminDAO.searchUser(keyword, status);
 
         if ("Not found".equals(status[0])) {
-            System.out.println("No customer found matching: " + keyword);
-            return;
+            view.showError("No customer found for: " + keyword);
+        } else if (status[0] != null && status[0].startsWith("Error")) {
+            view.showError(status[0]);
+        } else {
+            view.displayUsers(users);
         }
-        if (status[0] != null && status[0].startsWith("Error")) {
-            System.out.println("! " + status[0]);
-            return;
-        }
-        printUserTable(users);
     }
 
     private void viewAuditLogs() {
-        System.out.println("\n--- VIEW CUSTOMER AUDIT LOGS ---");
-        System.out.print("Enter UserID to check history: ");
-        String userId = sc.nextLine().trim();
-
-        if (userId.isEmpty())
-            return;
+        String userId = view.getAuditLogUserId();
+        if (userId.isEmpty()) return;
 
         String[] status = new String[1];
-        List<Map<String, Object>> logs = UserAccoutsDAO.viewAuditLogs(userId, status);
+        List<Map<String, Object>> logs = AdminDAO.viewAuditLogs(userId, status);
 
         if ("User not found".equals(status[0])) {
-            System.out.println("! " + status[0]);
-            return;
-        }
-
-        if (logs.isEmpty()) {
-            System.out.println("No changes recorded for this user.");
-            return;
-        }
-
-        // In bảng kết quả cho đẹp
-        System.out.printf("%-5s | %-15s | %-18s | %-18s | %-20s%n",
-                "ID", "Action", "Old Value", "New Value", "Time");
-        System.out.println("-".repeat(85));
-        for (Map<String, Object> log : logs) {
-            System.out.printf("%-5d | %-15s | %-18s | %-18s | %-20s%n",
-                    log.get("logId"),
-                    log.get("actionType"),
-                    log.get("oldValue"),
-                    log.get("newValue"),
-                    log.get("changedAt"));
-        }
-    }
-
-    // =========================================================================
-    // HELPERS — In dữ liệu ra console dạng bảng
-    // =========================================================================
-
-    private void printUserTable(List<Map<String, String>> users) {
-        System.out.printf("%-10s | %-25s | %-12s | %-10s | %-8s%n",
-                "UserID", "Name", "Phone", "Role", "BirthDay");
-        System.out.println("-".repeat(80));
-        for (Map<String, String> u : users) {
-            System.out.printf("%-10s | %-25s | %-12s | %-10s | %-8s%n",
-                    u.get("userID"),
-                    u.get("userName"),
-                    u.get("numberPhone"),
-                    u.get("roleUser"),
-                    u.get("birthDay"));
-        }
-        System.out.println("Total: " + users.size() + " record(s).");
-    }
-
-    private int readInt() {
-        try {
-            return Integer.parseInt(sc.nextLine().trim());
-        } catch (NumberFormatException e) {
-            return -1;
+            view.showError(status[0]);
+        } else if (logs.isEmpty()) {
+            view.showMessage("No logs recorded for this user.");
+        } else {
+            view.displayAuditLogs(logs);
         }
     }
 }

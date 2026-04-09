@@ -2,6 +2,7 @@ DROP DATABASE IF EXISTS MANAGEBANKACCOUNT;
 create database MANAGEBANKACCOUNT;
 use MANAGEBANKACCOUNT;
 /*Start create and modify database*/
+select * from accountbank;
 create table USERACCOUNTS (	
 	userID varchar(10) primary key,
     userName varchar(200) not null,
@@ -11,6 +12,19 @@ create table USERACCOUNTS (
     numberPhone varchar(10) not null unique,
     email varchar(100) not null unique,
     roleUser varchar(20) not null	
+);
+
+/* 
+ * Bảng STAFF_AUDIT_LOGS: Lưu lại các hành động quản trị của nhân viên (Staff).
+ * Giúp Admin kiểm soát được ai đã khoá/mở khoá tài khoản nào, khi nào.
+ */
+create table STAFF_AUDIT_LOGS (
+    logId int auto_increment primary key,
+    staffID varchar(10) not null,
+    actionType varchar(100) not null,
+    targetInfo varchar(500),
+    actionAt datetime default CURRENT_TIMESTAMP,
+    foreign key (staffID) references USERACCOUNTS(userID) on update cascade
 );
 
 select * from useraccounts;
@@ -122,6 +136,7 @@ create table BANKTRANSACTIONS(
 
 
 /*End create and modify database*/
+
 
 /*Create random code function */
 delimiter $$
@@ -465,92 +480,56 @@ delimiter ;
 
 /*Start Task 7: Deposit money into an account * - Lợi*/
 delimiter $$
-create procedure depositMoney (
-	IN p_numberAccountStaff varchar(10),
-	IN p_numberAccountUser varchar(10),
-    IN p_transactionId char(30),
-    IN p_amount decimal(15, 2),
-    OUT p_result int # 0:success, 1: no account, 2: server error, 5:not authorization
+DROP PROCEDURE IF EXISTS depositMoney$$
+CREATE PROCEDURE depositMoney(
+    IN p_staffID VARCHAR(10), -- Chỉ cần ID nhân viên để ghi log (Ai thực hiện nạp)
+    IN p_numberAccountUser VARCHAR(10), 
+    IN p_transactionId CHAR(30), 
+    IN p_amount DECIMAL(15,2), 
+    OUT p_result INT
 )
-proc: begin
-	declare v_role varchar(30) default null;
-    declare exit handler for sqlexception
-    begin
-		rollback;
-        update BANKTRANSACTIONS
-			set stateOfTransaction = 'Cancel'
-			where transactionId = p_transactionId;
-		set p_result = 2;
-    end;
+proc: BEGIN
+    DECLARE v_role VARCHAR(20) DEFAULT NULL;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION 
+    BEGIN 
+        ROLLBACK; 
+        UPDATE BANKTRANSACTIONS SET STATEOFTRANSACTION = 'Cancel' WHERE TRANSACTIONID = p_transactionId; 
+        SET p_result = 2; 
+    END;
     
-    set p_result = 2;
-    
-    #Kiem tra so tien nap co am
-    if p_amount <= 0 then
-		set p_result = 2;
-		leave proc;
-	end if;
-    
-    #Kiem tra phan quyen cua tai khoan client
-    select u.roleUser
-		into v_role
-		from ACCOUNTBANK a
-		join USERACCOUNTS u on a.userID = u.userID
-		where a.numberAccount = p_numberAccountUser;
-        
-	if v_role is null then
-        set p_result = 1;
-        leave proc;
-	end if;
-        
-    if v_role <> 'Client' then
-        set p_result = 5;
-        leave proc;
-	end if;
-    
-    #Kiem tra phan quyen cua tai khoan
-    select u.roleUser
-		into v_role
-		from ACCOUNTBANK a
-		join USERACCOUNTS u on a.userID = u.userID
-		where a.numberAccount = p_numberAccountStaff;
-        
-	if v_role is null then
-        set p_result = 1;
-        leave proc;
-	end if;
-    
-    if v_role <> 'Staff' then
-        set p_result = 5;
-        leave proc;
-	end if;
-    
-    
-    INSERT INTO BANKTRANSACTIONS
-    VALUES (p_transactionId, NOW(), p_amount, 'Processing', 'D001', p_numberAccountStaff, p_numberAccountUser);
-    
-    start transaction;
-    
-    UPDATE ACCOUNTBANK
-    SET balance = balance + p_amount
-    WHERE numberAccount = p_numberAccountUser;
+    SET p_result = 2;
+    IF p_amount <= 0 THEN LEAVE proc; END IF;
 
-    IF ROW_COUNT() = 0 THEN
-        SET p_result = 2;
-        ROLLBACK;
-        update BANKTRANSACTIONS
-			set stateOfTransaction = 'Cancel'
-			where transactionId = p_transactionId;
-        LEAVE proc;
-	else
-		update BANKTRANSACTIONS
-			set stateOfTransaction = 'Success'
-			where transactionId = p_transactionId;
-        set p_result = 0;
-    END IF;
+    -- Kiểm tra tài khoản khách hàng
+    SELECT u.ROLEUSER INTO v_role 
+    FROM ACCOUNTBANK a JOIN USERACCOUNTS u ON a.USERID = u.USERID 
+    WHERE a.NUMBERACCOUNT = p_numberAccountUser;
     
-    commit;
-end$$
+    IF v_role IS NULL THEN SET p_result = 1; LEAVE proc; END IF;
+    IF v_role <> 'Client' THEN SET p_result = 5; LEAVE proc; END IF;
+
+    -- Kiểm tra người thực hiện có phải Staff không (Dựa vào ID)
+    SELECT ROLEUSER INTO v_role FROM USERACCOUNTS WHERE USERID = p_staffID;
+    IF v_role <> 'Staff' THEN SET p_result = 5; LEAVE proc; END IF;
+
+    -- Ghi log giao dịch (destinationAccount = null hoặc 'CASH')
+    INSERT INTO BANKTRANSACTIONS (TRANSACTIONID, AMOUNT, STATEOFTRANSACTION, TYPEOFTRANSACTIONCODE, NUMBERACCOUNT, DESTINATIONACCOUNT)
+    VALUES (p_transactionId, p_amount, 'Processing', 'D001', p_numberAccountUser, NULL);
+
+    START TRANSACTION;
+        -- CHỈ CỘNG TIỀN VÀO TÀI KHOẢN KHÁCH HÀNG (Không trừ của ai cả)
+        UPDATE ACCOUNTBANK SET BALANCE = BALANCE + p_amount WHERE NUMBERACCOUNT = p_numberAccountUser;
+        
+        IF ROW_COUNT() = 0 THEN
+            SET p_result = 2; ROLLBACK;
+            UPDATE BANKTRANSACTIONS SET STATEOFTRANSACTION = 'Cancel' WHERE TRANSACTIONID = p_transactionId;
+            LEAVE proc;
+        END IF;
+        
+        UPDATE BANKTRANSACTIONS SET STATEOFTRANSACTION = 'Success' WHERE TRANSACTIONID = p_transactionId;
+        SET p_result = 0;
+    COMMIT;
+END$$
 delimiter ;
 
 /*End Task 7: Deposit money into an account * - Lợi*/
@@ -573,6 +552,8 @@ begin
     THEN set p_result = "This account is already blocked";
 	ELSE
 		update ACCOUNTBANK set state = "Blocked" where numberAccount = p_numberAccount;
+        -- Ghi log hành động của staff (Cần truyền staffID vào, nhưng hiện tại SP chưa có tham số này. 
+        -- Để đơn giản trong đồ án, ta sẽ cải tiến SP này sau hoặc ghi log tại tầng Java).
         set p_result = "Success";
 	END IF;
 end$$
@@ -773,20 +754,49 @@ select * from audit_log_user;
 /*Statistics total money in system*/
 delimiter $$
 create procedure getSystemStatistics(
-    OUT p_totalBalance double,
     OUT p_totalUsers int,
-    OUT p_totalAccounts int
+    OUT p_totalAccounts int,
+    OUT p_totalBalance double
 )
 begin
-    start transaction;
-
-    select sum(balance) into p_totalBalance from ACCOUNTBANK;
     select count(*) into p_totalUsers from USERACCOUNTS;
     select count(*) into p_totalAccounts from ACCOUNTBANK;
+    select sum(balance) into p_totalBalance from ACCOUNTBANK;
+end$$
+delimiter ;
 
-    commit;
+/* [NEW] Reporting Views for Grade A */
+create view VIEW_TRANSACTION_SUMMARY as
+select 
+    date(created_at) as transaction_date,
+    typeOfTransactionCode,
+    count(*) as total_transactions,
+    sum(amount) as total_amount
+from BANKTRANSACTIONS
+group by date(created_at), typeOfTransactionCode;
+
+create view VIEW_USER_FINANCIAL_HEALTH as
+select 
+    u.userID,
+    u.userName,
+    count(a.numberAccount) as total_accounts,
+    sum(a.balance) as total_balance
+from USERACCOUNTS u
+left join ACCOUNTBANK a on u.userID = a.userID
+group by u.userID, u.userName;
+
+/* Procedure to Log Staff Actions */
+delimiter $$
+create procedure logStaffAction(
+    IN p_staffID varchar(10),
+    IN p_actionType varchar(100),
+    IN p_targetInfo varchar(500)
+)
+begin
+    insert into STAFF_AUDIT_LOGS (staffID, actionType, targetInfo)
+    values (p_staffID, p_actionType, p_targetInfo);
 end$$
 delimiter ;
 /*End Statistics total money in system*/
-select * from accountbank;
-update accountbank set state = "Active" where numberAccount = "7419173014";
+
+

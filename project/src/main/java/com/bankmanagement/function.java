@@ -2,7 +2,7 @@ package com.bankmanagement;
 
 import java.security.SecureRandom;
 
-import com.bankmanagement.dao.UserAccoutsDAO;
+import com.bankmanagement.dao.UserAccountsDAO;
 
 public class function {
     public static String generateStringRandom(int length, String tableName, String columnName, String prefix) {
@@ -29,7 +29,7 @@ public class function {
             }
 
             // nếu chưa tồn tại trong DB thì trả về
-            if (!UserAccoutsDAO.existedString(tableName, columnName, generated)) {
+            if (!UserAccountsDAO.existedString(tableName, columnName, generated)) {
                 return generated;
             }
         }
