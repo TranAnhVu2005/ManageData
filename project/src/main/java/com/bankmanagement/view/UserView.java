@@ -28,7 +28,8 @@ public class UserView {
     }
 
     /**
-     * Vòng lặp menu chính của Client — tự động tải lại danh sách tài khoản sau mỗi thao tác
+     * Vòng lặp menu chính của Client — tự động tải lại danh sách tài khoản sau mỗi
+     * thao tác
      * để đảm bảo số dư và danh sách luôn phản ánh trạng thái mới nhất từ DB.
      */
     public void showMenu(UserAccount currentUser) {
@@ -52,7 +53,10 @@ public class UserView {
                 case 8 -> new UserController(currentUser, sc).searchTransactionByDate(bankAccounts);
                 case 9 -> new UserController(currentUser, sc).changePin(bankAccounts);
                 case 10 -> new UserController(currentUser, sc).createCard(bankAccounts);
-                case 0 -> { System.out.println("Logged out!"); return; }
+                case 0 -> {
+                    System.out.println("Logged out!");
+                    return;
+                }
                 default -> System.out.println("! Invalid choice.");
             }
         }
@@ -111,7 +115,8 @@ public class UserView {
 
     /**
      * In kết quả kiểm tra số dư.
-     * result code đồng bộ với checkBalance Proc: 0=OK, 1=not found, 3=blocked, 4=error.
+     * result code đồng bộ với checkBalance Proc: 0=OK, 1=not found, 3=blocked,
+     * 4=error.
      */
     public void showBalanceResult(double balance, int resultCode) {
         switch (resultCode) {
@@ -126,7 +131,7 @@ public class UserView {
     /**
      * In kết quả tạo tài khoản ngân hàng.
      * result code đồng bộ với createBankAccount Proc:
-     *   0=OK, 1=user not found, 2=server error, 3=duplicate account.
+     * 0=OK, 1=user not found, 2=server error, 3=duplicate account.
      */
     public void showCreateAccountResult(int result, String newAccountNumber) {
         switch (result) {
@@ -142,7 +147,8 @@ public class UserView {
     // =========================================================================
 
     /**
-     * In lịch sử giao dịch dạng bảng — dùng chung cho checkTransaction và searchTransactionByDate.
+     * In lịch sử giao dịch dạng bảng — dùng chung cho checkTransaction và
+     * searchTransactionByDate.
      * numberAccount giúp phân biệt giao dịch đến (IN) hay đi (OUT).
      */
     public void showTransactionTable(List<Map<String, Object>> transactions, String numberAccount) {
@@ -153,24 +159,26 @@ public class UserView {
 
         System.out.println();
         System.out.printf("%-14s | %-20s | %-15s | %-10s | %-6s | %-12s%n",
-            "ID", "Date", "Amount (VND)", "Status", "Dir", "Counterpart");
+                "ID", "Date", "Amount (VND)", "Status", "Dir", "Counterpart");
         System.out.println("-".repeat(95));
 
         for (Map<String, Object> t : transactions) {
             String from = (String) t.get("numberAccount");
-            String to   = t.get("destinationAccount") != null ? (String) t.get("destinationAccount") : "";
+            String to = t.get("destinationAccount") != null ? (String) t.get("destinationAccount") : "";
 
             // Chiều giao dịch: OUT = tiền đi, IN = tiền đến
-            String direction   = numberAccount.equals(from) ? "OUT" : "IN";
+            // Nếu cái mình chọn bằng với cái trong transaction thì out, ngược lại thì in
+            String direction = numberAccount.equals(from) ? "OUT" : "IN";
+            // Logic tương tự
             String counterpart = numberAccount.equals(from) ? (to.isEmpty() ? "N/A" : to) : from;
 
             System.out.printf("%-14s | %-20s | %,15.2f | %-10s | %-6s | %-12s%n",
-                shorten((String) t.get("transactionId"), 14),
-                t.get("created_at"),
-                t.get("amount"),
-                t.get("state"),
-                direction,
-                counterpart);
+                    shorten((String) t.get("transactionId"), 14),
+                    t.get("created_at"),
+                    t.get("amount"),
+                    t.get("state"),
+                    direction,
+                    counterpart);
         }
         System.out.println("-".repeat(95));
         System.out.println("Total: " + transactions.size() + " transaction(s).");
@@ -207,7 +215,8 @@ public class UserView {
                 continue;
             }
             String confirm = readPassword("Confirm PIN    : ");
-            if (pin.equals(confirm)) return pin;
+            if (pin.equals(confirm))
+                return pin;
             System.out.println("! PINs do not match. Try again.");
         }
     }
@@ -237,7 +246,7 @@ public class UserView {
     public void createBankAccountMenu(int numberOfAccounts) {
         System.out.println("\n[Create Bank Account]");
         System.out.printf("You have %d/10 account(s). Can create %d more.%n",
-            numberOfAccounts, 10 - numberOfAccounts);
+                numberOfAccounts, 10 - numberOfAccounts);
 
         if (numberOfAccounts >= 10) {
             System.out.println("! Maximum accounts reached. Block an existing one first.");
@@ -254,25 +263,30 @@ public class UserView {
     // =========================================================================
 
     private boolean hasAny(BankAccount[] accounts) {
-        if (accounts == null) return false;
+        if (accounts == null)
+            return false;
         for (BankAccount acc : accounts) {
-            if (acc != null) return true;
+            if (acc != null)
+                return true;
         }
         return false;
     }
 
     private int countAccounts(BankAccount[] accounts) {
-        if (accounts == null) return 0;
+        if (accounts == null)
+            return 0;
         int count = 0;
         for (BankAccount acc : accounts) {
-            if (acc != null) count++;
+            if (acc != null)
+                count++;
         }
         return count;
     }
 
     /** Cắt ngắn chuỗi TransactionID dài cho vừa cột bảng. */
     private String shorten(String s, int maxLen) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.length() <= maxLen ? s : s.substring(0, maxLen - 2) + "..";
     }
 

@@ -30,7 +30,7 @@ public class UserAccoutsDAO {
     public static boolean verifyUserPassword(String userID, String rawPassword) {
         String sql = "SELECT passWordHash FROM USERACCOUNTS WHERE userID = ?";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userID);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -49,7 +49,7 @@ public class UserAccoutsDAO {
     public static boolean verifyAccountPin(String numberAccount, String rawPin) {
         String sql = "SELECT pinCodeHash FROM ACCOUNTBANK WHERE numberAccount = ?";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, numberAccount);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -68,7 +68,7 @@ public class UserAccoutsDAO {
     public static boolean verifyCardPin(String cardNumber, String rawPin) {
         String sql = "SELECT cardPinCodeHash FROM CARDS WHERE cardNumber = ?";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, cardNumber);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -90,20 +90,20 @@ public class UserAccoutsDAO {
      */
     public static Map<String, String> getProfile(String userID) {
         String sql = "SELECT userID, userName, ID, birthDay, numberPhone, email, roleUser " +
-                     "FROM USERACCOUNTS WHERE userID = ?";
+                "FROM USERACCOUNTS WHERE userID = ?";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userID);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 Map<String, String> profile = new HashMap<>();
-                profile.put("userID",      rs.getString("userID"));
-                profile.put("userName",    rs.getString("userName"));
-                profile.put("ID",          rs.getString("ID"));
-                profile.put("birthDay",    rs.getString("birthDay"));
+                profile.put("userID", rs.getString("userID"));
+                profile.put("userName", rs.getString("userName"));
+                profile.put("ID", rs.getString("ID"));
+                profile.put("birthDay", rs.getString("birthDay"));
                 profile.put("numberPhone", rs.getString("numberPhone"));
-                profile.put("email",       rs.getString("email"));
-                profile.put("roleUser",    rs.getString("roleUser"));
+                profile.put("email", rs.getString("email"));
+                profile.put("roleUser", rs.getString("roleUser"));
                 return profile;
             }
         } catch (SQLException e) {
@@ -118,11 +118,11 @@ public class UserAccoutsDAO {
      * newPasswordHash = null nghĩa là không đổi mật khẩu.
      */
     public static String updateInfo(String userID, String userName, String id,
-                                    String birthDay, String numberPhone,
-                                    String email, String newPasswordHash) {
+            String birthDay, String numberPhone,
+            String email, String newPasswordHash) {
         String sql = "{call updateInfo(?,?,?,?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, userID);
             cs.setString(2, nvl(userName));
             cs.setString(3, nvl(id));
@@ -144,12 +144,13 @@ public class UserAccoutsDAO {
 
     /**
      * [Task 9] Tạo tài khoản ngân hàng mới cho người dùng.
-     * Trả về mã kết quả: 0=thành công, 1=không tìm thấy user, 2=lỗi server, 3=trùng số TK.
+     * Trả về mã kết quả: 0=thành công, 1=không tìm thấy user, 2=lỗi server, 3=trùng
+     * số TK.
      */
     public static int createBankAccount(String accountNumber, String pinCodeHash, String userId) {
         String sql = "{call createBankAccount(?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, accountNumber);
             cs.setString(2, pinCodeHash);
             cs.setString(3, userId);
@@ -168,9 +169,9 @@ public class UserAccoutsDAO {
      */
     public static BankAccount[] getActiveAccountByUserId(String userId) {
         String sql = "SELECT numberAccount, pinCodeHash, balance, state " +
-                     "FROM ACCOUNTBANK WHERE userID = ? AND state = 'Active'";
+                "FROM ACCOUNTBANK WHERE userID = ? AND state = 'Active'";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
             ResultSet rs = ps.executeQuery();
 
@@ -195,19 +196,20 @@ public class UserAccoutsDAO {
     /**
      * [Task 5] Lấy số dư tài khoản ngân hàng qua Stored Procedure.
      * PIN đã được xác thực tầng Java trước khi gọi hàm này.
-     * Trả về Map gồm "balance" và "resultCode" (0=OK, 1=ko tìm thấy, 3=blocked, 4=lỗi).
+     * Trả về Map gồm "balance" và "resultCode" (0=OK, 1=ko tìm thấy, 3=blocked,
+     * 4=lỗi).
      */
     public static Map<String, Object> getBalance(String accountNumber) {
         String sql = "{call checkBalance(?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, accountNumber);
             cs.registerOutParameter(2, Types.DOUBLE);
             cs.registerOutParameter(3, Types.INTEGER);
             cs.execute();
 
             Map<String, Object> result = new HashMap<>();
-            result.put("balance",    cs.getDouble(2));
+            result.put("balance", cs.getDouble(2));
             result.put("resultCode", cs.getInt(3));
             return result;
         } catch (SQLException e) {
@@ -223,10 +225,10 @@ public class UserAccoutsDAO {
      * [Task 8] Khóa tài khoản ngân hàng (chuyển state -> Blocked).
      * Proc kiểm tra: còn số dư thì từ chối; đã Blocked thì báo lỗi.
      */
-    public static String deleteAccount(String numberAccount) {
-        String sql = "{call deleteAccount(?,?)}";
+    public static String blockAccount(String numberAccount) {
+        String sql = "{call blockAccount(?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, numberAccount);
             cs.registerOutParameter(2, Types.VARCHAR);
             cs.execute();
@@ -243,7 +245,7 @@ public class UserAccoutsDAO {
     public static String changeAccountPin(String numberAccount, String newPinHash) {
         String sql = "{call changeAccountPin(?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, numberAccount);
             cs.setString(2, newPinHash);
             cs.registerOutParameter(3, Types.VARCHAR);
@@ -253,7 +255,6 @@ public class UserAccoutsDAO {
             return "Error: " + e.getMessage();
         }
     }
-
 
     // =========================================================================
     // NHÓM 4: GIAO DỊCH (Transaction Operations)
@@ -266,7 +267,7 @@ public class UserAccoutsDAO {
     public static String transferMoney(String numberAccount, String destAccount, double amount) {
         String sql = "{call transferMoney(?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, numberAccount);
             cs.setString(2, destAccount);
             cs.setDouble(3, amount);
@@ -285,7 +286,7 @@ public class UserAccoutsDAO {
     public static int depositMoney(String staffAccount, String userAccount, String transactionId, double amount) {
         String sql = "{call depositMoney(?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, staffAccount);
             cs.setString(2, userAccount);
             cs.setString(3, transactionId);
@@ -301,12 +302,13 @@ public class UserAccoutsDAO {
 
     /**
      * [Task 3] Rút tiền (Withdraw) — Dành cho Client sử dụng thẻ ngân hàng (CARDS).
-     * Trả về int: 0=success, 1=no card, 3=not enough balance, 4=error, 5=not authorized.
+     * Trả về int: 0=success, 1=no card, 3=not enough balance, 4=error, 5=not
+     * authorized.
      */
     public static int withdrawMoney(String cardNumber, double amount, String transactionId) {
         String sql = "{call withDrawMoney(?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, cardNumber);
             cs.setDouble(2, amount);
             cs.setString(3, transactionId);
@@ -321,13 +323,15 @@ public class UserAccoutsDAO {
 
     /**
      * [Task 6] Lấy lịch sử giao dịch của một tài khoản.
-     * Proc trả về cả ResultSet lẫn OUT param — cần đọc RS trước, sau đó mới đọc OUT.
-     * Trả về null nếu tài khoản không tồn tại hoặc bị khóa (dùng resultStatus để kiểm tra).
+     * Proc trả về cả ResultSet lẫn OUT param — cần đọc RS trước, sau đó mới đọc
+     * OUT.
+     * Trả về null nếu tài khoản không tồn tại hoặc bị khóa (dùng resultStatus để
+     * kiểm tra).
      */
     public static List<Map<String, Object>> checkTransaction(String numberAccount, String[] resultStatus) {
         String sql = "{call checkTransaction(?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, numberAccount);
             cs.registerOutParameter(2, Types.VARCHAR);
 
@@ -337,22 +341,24 @@ public class UserAccoutsDAO {
             // Duyệt qua tất cả result từ Proc (có thể có nhiều result set)
             do {
                 if (hasResultSet) {
+                    // Lấy từng bảng ra
                     try (ResultSet rs = cs.getResultSet()) {
                         while (rs.next()) {
                             Map<String, Object> row = new HashMap<>();
-                            row.put("transactionId",      rs.getString("transactionId"));
-                            row.put("created_at",          rs.getString("created_at"));
-                            row.put("amount",              rs.getDouble("amount"));
-                            row.put("state",               rs.getString("stateOfTransaction"));
-                            row.put("type",                rs.getString("typeOfTransactionCode"));
-                            row.put("numberAccount",       rs.getString("numberAccount"));
-                            row.put("destinationAccount",  rs.getString("destinationAccount"));
+                            row.put("transactionId", rs.getString("transactionId"));
+                            row.put("created_at", rs.getString("created_at"));
+                            row.put("amount", rs.getDouble("amount"));
+                            row.put("state", rs.getString("stateOfTransaction"));
+                            row.put("type", rs.getString("typeOfTransactionCode"));
+                            row.put("numberAccount", rs.getString("numberAccount"));
+                            row.put("destinationAccount", rs.getString("destinationAccount"));
                             rows.add(row);
                         }
                     }
                 }
                 hasResultSet = cs.getMoreResults();
             } while (hasResultSet || cs.getUpdateCount() != -1);
+            // Kiểm tra
 
             // OUT param chỉ đọc được sau khi đã drain hết result set
             resultStatus[0] = cs.getString(2);
@@ -371,7 +377,7 @@ public class UserAccoutsDAO {
             String numberAccount, String fromDate, String toDate, String[] resultStatus) {
         String sql = "{call searchTransactionByDate(?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, numberAccount);
             cs.setString(2, fromDate);
             cs.setString(3, toDate);
@@ -385,13 +391,13 @@ public class UserAccoutsDAO {
                     try (ResultSet rs = cs.getResultSet()) {
                         while (rs.next()) {
                             Map<String, Object> row = new HashMap<>();
-                            row.put("transactionId",      rs.getString("transactionId"));
-                            row.put("created_at",          rs.getString("created_at"));
-                            row.put("amount",              rs.getDouble("amount"));
-                            row.put("state",               rs.getString("stateOfTransaction"));
-                            row.put("type",                rs.getString("typeOfTransactionCode"));
-                            row.put("numberAccount",       rs.getString("numberAccount"));
-                            row.put("destinationAccount",  rs.getString("destinationAccount"));
+                            row.put("transactionId", rs.getString("transactionId"));
+                            row.put("created_at", rs.getString("created_at"));
+                            row.put("amount", rs.getDouble("amount"));
+                            row.put("state", rs.getString("stateOfTransaction"));
+                            row.put("type", rs.getString("typeOfTransactionCode"));
+                            row.put("numberAccount", rs.getString("numberAccount"));
+                            row.put("destinationAccount", rs.getString("destinationAccount"));
                             rows.add(row);
                         }
                     }
@@ -413,24 +419,25 @@ public class UserAccoutsDAO {
 
     /**
      * Lấy danh sách toàn bộ khách hàng trong hệ thống.
-     * Chỉ phục vụ tài khoản Staff — không lọc theo roleUser vì Staff đã được kiểm soát ở Controller.
+     * Chỉ phục vụ tài khoản Staff — không lọc theo roleUser vì Staff đã được kiểm
+     * soát ở Controller.
      */
     public static List<Map<String, String>> getAllUsers() {
         String sql = "SELECT userID, userName, ID, birthDay, numberPhone, email, roleUser " +
-                     "FROM USERACCOUNTS ORDER BY roleUser, userName";
+                "FROM USERACCOUNTS ORDER BY roleUser, userName";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ResultSet rs = ps.executeQuery();
             List<Map<String, String>> users = new ArrayList<>();
             while (rs.next()) {
                 Map<String, String> u = new HashMap<>();
-                u.put("userID",      rs.getString("userID"));
-                u.put("userName",    rs.getString("userName"));
-                u.put("ID",          rs.getString("ID"));
-                u.put("birthDay",    rs.getString("birthDay"));
+                u.put("userID", rs.getString("userID"));
+                u.put("userName", rs.getString("userName"));
+                u.put("ID", rs.getString("ID"));
+                u.put("birthDay", rs.getString("birthDay"));
                 u.put("numberPhone", rs.getString("numberPhone"));
-                u.put("email",       rs.getString("email"));
-                u.put("roleUser",    rs.getString("roleUser"));
+                u.put("email", rs.getString("email"));
+                u.put("roleUser", rs.getString("roleUser"));
                 users.add(u);
             }
             return users;
@@ -447,7 +454,7 @@ public class UserAccoutsDAO {
     public static List<Map<String, String>> searchUser(String keyword, String[] resultStatus) {
         String sql = "{call searchUser(?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, keyword);
             cs.registerOutParameter(2, Types.VARCHAR);
 
@@ -459,13 +466,13 @@ public class UserAccoutsDAO {
                     try (ResultSet rs = cs.getResultSet()) {
                         while (rs.next()) {
                             Map<String, String> u = new HashMap<>();
-                            u.put("userID",      rs.getString("userID"));
-                            u.put("userName",    rs.getString("userName"));
-                            u.put("ID",          rs.getString("ID"));
-                            u.put("birthDay",    rs.getString("birthDay"));
+                            u.put("userID", rs.getString("userID"));
+                            u.put("userName", rs.getString("userName"));
+                            u.put("ID", rs.getString("ID"));
+                            u.put("birthDay", rs.getString("birthDay"));
                             u.put("numberPhone", rs.getString("numberPhone"));
-                            u.put("email",       rs.getString("email"));
-                            u.put("roleUser",    rs.getString("roleUser"));
+                            u.put("email", rs.getString("email"));
+                            u.put("roleUser", rs.getString("roleUser"));
                             users.add(u);
                         }
                     }
@@ -484,7 +491,7 @@ public class UserAccoutsDAO {
     public static int createCard(String cardNumber, String numberAccount, String pin, String ccv) {
         String sql = "{call createCard(?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
-             CallableStatement cs = conn.prepareCall(sql)) {
+                CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, cardNumber);
             cs.setString(2, numberAccount);
             String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
@@ -502,7 +509,7 @@ public class UserAccoutsDAO {
     public static boolean existedString(String tableName, String columnName, String value) {
         String sql = "SELECT COUNT(*) FROM " + tableName + " WHERE " + columnName + " = ?";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, value);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -513,8 +520,6 @@ public class UserAccoutsDAO {
         }
         return false;
     }
-
-
 
     // =========================================================================
     // PRIVATE HELPER
