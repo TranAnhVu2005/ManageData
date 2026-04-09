@@ -118,7 +118,8 @@ public class AdminController {
         try {
             amount = Double.parseDouble(sc.nextLine().trim());
         } catch (NumberFormatException e) {
-            // Error caught below
+            System.out.println("! Invalid amount format.");
+            return;
         }
         
         if (amount <= 0) {
@@ -126,7 +127,7 @@ public class AdminController {
             return;
         }
 
-        String transactionId = "D" + com.bankmanagement.function.generateStringRandom(8, null, null) + System.currentTimeMillis() % 10000;
+        String transactionId = com.bankmanagement.function.generateStringRandom(29, null, null, "D"); // Mã giao dịch bắt đầu bằng 'D' để dễ phân biệt
         int result = UserAccoutsDAO.depositMoney(staffAccount, targetAccount, transactionId, amount);
 
         switch (result) {
