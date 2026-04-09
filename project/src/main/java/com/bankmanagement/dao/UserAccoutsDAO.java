@@ -198,10 +198,10 @@ public class UserAccoutsDAO {
 
     public static Cards[] getCardsByUserId(String userId) {
         String sql = "SELECT c.cardNumber, c.cardPinCodeHash, c.secureCode, a.numberAccount " +
-                     "FROM CARDS c JOIN ACCOUNTBANK a ON c.numberAccount = a.numberAccount " +
-                     "WHERE a.userID = ? AND a.state = 'Active' AND c.expire_at > CURRENT_DATE";
+                "FROM CARDS c JOIN ACCOUNTBANK a ON c.numberAccount = a.numberAccount " +
+                "WHERE a.userID = ? AND a.state = 'Active' AND c.expire_at > CURRENT_DATE";
         try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
             ResultSet rs = ps.executeQuery();
 
@@ -256,6 +256,23 @@ public class UserAccoutsDAO {
      */
     public static String blockAccount(String numberAccount) {
         String sql = "{call blockAccount(?,?)}";
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setString(1, numberAccount);
+            cs.registerOutParameter(2, Types.VARCHAR);
+            cs.execute();
+            return cs.getString(2);
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    /**
+     * [Task 13] Khóa tài khoản ngân hàng (chuyển state -> Blocked).
+     * Proc kiểm tra: còn số dư thì từ chối; đã Blocked thì báo lỗi.
+     */
+    public static String unblockAccount(String numberAccount) {
+        String sql = "{call unblockAccount(?,?)}";
         try (Connection conn = dbConnection.getConnection();
                 CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, numberAccount);
@@ -533,6 +550,38 @@ public class UserAccoutsDAO {
             e.printStackTrace();
             return -1;
         }
+    }
+
+    public static List<Map<String, Object>> viewAuditLogs(String userId, String[] status) {
+        List<Map<String, Object>> logs = new ArrayList<>();
+        String sql = "{call viewAuditLogs(?, ?)}";
+
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, userId);
+            stmt.registerOutParameter(2, java.sql.Types.VARCHAR);
+
+            boolean hasResultSet = stmt.execute();
+            status[0] = stmt.getString(2); // Lấy p_result từ SQL
+
+            if (hasResultSet) {
+                try (ResultSet rs = stmt.getResultSet()) {
+                    while (rs.next()) {
+                        Map<String, Object> row = new HashMap<>();
+                        row.put("logId", rs.getInt("logId"));
+                        row.put("actionType", rs.getString("actionType"));
+                        row.put("oldValue", rs.getString("oldValue"));
+                        row.put("newValue", rs.getString("newValue"));
+                        row.put("changedAt", rs.getTimestamp("changedAt"));
+                        logs.add(row);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            status[0] = "Error: " + e.getMessage();
+        }
+        return logs;
     }
 
     public static boolean existedString(String tableName, String columnName, String value) {

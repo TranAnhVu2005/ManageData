@@ -36,6 +36,8 @@ public class AdminController {
                 case 3 -> blockAccount();
                 case 4 -> viewAllCustomers();
                 case 5 -> searchCustomer();
+                case 6 -> unblockAccount();
+                case 7 -> viewAuditLogs();
                 case 0 -> {
                     System.out.println("Logged out!");
                     return;
@@ -54,6 +56,7 @@ public class AdminController {
         System.out.println("|  3. Block account                        |");
         System.out.println("|  4. View all customers                   |");
         System.out.println("|  5. Search customer                      |");
+        System.out.println("|  6. Unblock account                      |");
         System.out.println("|  0. Logout                               |");
         System.out.println("+------------------------------------------+");
         System.out.print("Choose: ");
@@ -132,7 +135,10 @@ public class AdminController {
             return;
         }
 
-        String transactionId = com.bankmanagement.function.generateStringRandom(29, null, null, "D"); // Mã giao dịch bắt đầu bằng 'D' để dễ phân biệt
+        String transactionId = com.bankmanagement.function.generateStringRandom(29, null, null, "D"); // Mã giao dịch
+                                                                                                      // bắt đầu bằng
+                                                                                                      // 'D' để dễ phân
+                                                                                                      // biệt
         int result = UserAccoutsDAO.depositMoney(staffAccount, targetAccount, transactionId, amount);
 
         switch (result) {
@@ -157,6 +163,21 @@ public class AdminController {
             return;
         }
         String result = UserAccoutsDAO.blockAccount(numberAccount);
+        System.out.println("-> " + result);
+    }
+
+    // =========================================================================
+    // Task 13 — Mở tài khoản ngân hàng
+    // =========================================================================
+    private void unblockAccount() {
+        System.out.println("\n--- UNBLOCK ACCOUNT ---");
+        System.out.print("Account number to unblock: ");
+        String numberAccount = sc.nextLine().trim();
+        if (numberAccount.isEmpty()) {
+            System.out.println("! Account number cannot be empty.");
+            return;
+        }
+        String result = UserAccoutsDAO.unblockAccount(numberAccount);
         System.out.println("-> " + result);
     }
 
@@ -199,6 +220,41 @@ public class AdminController {
             return;
         }
         printUserTable(users);
+    }
+
+    private void viewAuditLogs() {
+        System.out.println("\n--- VIEW CUSTOMER AUDIT LOGS ---");
+        System.out.print("Enter UserID to check history: ");
+        String userId = sc.nextLine().trim();
+
+        if (userId.isEmpty())
+            return;
+
+        String[] status = new String[1];
+        List<Map<String, Object>> logs = UserAccoutsDAO.viewAuditLogs(userId, status);
+
+        if ("User not found".equals(status[0])) {
+            System.out.println("! " + status[0]);
+            return;
+        }
+
+        if (logs.isEmpty()) {
+            System.out.println("No changes recorded for this user.");
+            return;
+        }
+
+        // In bảng kết quả cho đẹp
+        System.out.printf("%-5s | %-15s | %-18s | %-18s | %-20s%n",
+                "ID", "Action", "Old Value", "New Value", "Time");
+        System.out.println("-".repeat(85));
+        for (Map<String, Object> log : logs) {
+            System.out.printf("%-5d | %-15s | %-18s | %-18s | %-20s%n",
+                    log.get("logId"),
+                    log.get("actionType"),
+                    log.get("oldValue"),
+                    log.get("newValue"),
+                    log.get("changedAt"));
+        }
     }
 
     // =========================================================================

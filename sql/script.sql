@@ -53,6 +53,7 @@ create table AUDIT_LOG_USER (
     foreign key (userID) references USERACCOUNTS(userID) on update cascade on delete cascade
 );
 
+select * from AUDIT_LOG_USER;
 delimiter $$
 /* 
  * Trigger log_user_update: Chạy SIÊU TỐC và TỰ ĐỘNG (AFTER UPDATE) mỗi khi bảng USERACCOUNTS bị đổi dữ liệu.
@@ -73,6 +74,8 @@ begin
     end if;
 end$$
 delimiter ;
+
+
 
 create table ACCOUNTBANK(
 	numberAccount varchar(10) primary key,
@@ -387,7 +390,7 @@ begin
 				CONCAT("TRSF",DATE_FORMAT(NOW(),"%Y%m%d%H%i%s"),FLOOR(RAND()*1000)),
                 p_amount,
                 "Success",
-                "TRSF",
+                "T001",
                 p_numberAccount,
                 p_destinationAccount
             );
@@ -614,7 +617,7 @@ delimiter ;
 
 
 
-/*Start Task 11: Search transaction by date range* - Vũ*/
+/*Start Task 11: Search transaction by date range* - Lợi*/
 delimiter $$
 /*
  * searchTransactionByDate: Lọc lịch sử giao dịch của một tài khoản theo khoảng thời gian.
@@ -646,7 +649,7 @@ begin
     END IF;
 end$$
 delimiter ;
-/*End Task 11: Search transaction by date range* - Vũ*/
+/*End Task 11: Search transaction by date range* - Lợi*/
 
 
 
@@ -684,7 +687,7 @@ delimiter ;
 
 select * from useraccounts;
 
-/* create card for account */
+/*Task 14 create card for account */
 delimiter $$
 create procedure createCard(
     IN p_cardNumber char(16),
@@ -714,5 +717,56 @@ proc: begin
     set p_result = 0; -- success
 end$$
 delimiter ;
-/*End Task: Create Card for Account* - Loi*/
+/*End Task 14: Create Card for Account* - Loi*/
 
+
+/*Start Task 13: Unblock account* - Vũ*/
+select * from accountbank;
+delimiter $$
+create procedure unblockAccount(
+	in p_numberAccount varchar(10),
+    out p_result varchar(200)
+)
+begin
+    declare v_state enum("Active","Blocked");
+	declare v_balance decimal(15,2);
+    select state, balance into v_state,v_balance from ACCOUNTBANK where numberAccount = p_numberAccount;
+    IF v_state is null
+    THEN set p_result ="Not found account";
+    ELSEIF v_state != "Blocked"
+    THEN set p_result = "This account is already active";
+	ELSE
+		update ACCOUNTBANK set state = "Active" where numberAccount = p_numberAccount;
+        set p_result = "Success";
+	END IF;
+end$$
+delimiter ;
+/*End Task 13: Unblock account* - Vũ*/
+
+
+/*Task 15 View Audit Logs */
+delimiter $$
+create procedure viewAuditLogs(
+    in p_userID varchar(10),
+    out p_result varchar(200)
+)
+begin
+    declare v_exists int;
+    
+    -- Kiểm tra user có tồn tại không
+    select count(*) into v_exists from USERACCOUNTS where userID = p_userID;
+    
+    if v_exists = 0 then
+        set p_result = "User not found";
+    else
+        -- Lấy lịch sử thay đổi, xếp cái mới nhất lên đầu
+        select logId, actionType, oldValue, newValue, changedAt 
+        from AUDIT_LOG_USER 
+        where userID = p_userID 
+        order by changedAt desc;
+        set p_result = "Success";
+    end if;
+end$$
+delimiter ;
+/*End Task 15: View Audit Logs - Vũ*/
+select * from audit_log_user;
