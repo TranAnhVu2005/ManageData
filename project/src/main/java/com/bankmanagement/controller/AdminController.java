@@ -14,7 +14,8 @@ import java.util.Scanner;
  *
  * Staff có thể: Khóa/Mở khóa tài khoản, xem danh sách khách hàng,
  * tìm kiếm, xem toàn bộ giao dịch hệ thống.
- * Các chức năng Tạo tài khoản (Task 9) và Nạp tiền (Task 7) do Lợi cài đặt riêng.
+ * Các chức năng Tạo tài khoản (Task 9) và Nạp tiền (Task 7) do Lợi cài đặt
+ * riêng.
  */
 public class AdminController {
 
@@ -35,7 +36,10 @@ public class AdminController {
                 case 3 -> blockAccount();
                 case 4 -> viewAllCustomers();
                 case 5 -> searchCustomer();
-                case 0 -> { System.out.println("Logged out!"); return; }
+                case 0 -> {
+                    System.out.println("Logged out!");
+                    return;
+                }
                 default -> System.out.println("! Invalid choice.");
             }
         }
@@ -100,7 +104,8 @@ public class AdminController {
     private void depositMoney() {
         BankAccount[] staffAccounts = UserAccoutsDAO.getActiveAccountByUserId(currentUser.getUserId());
         if (staffAccounts == null || staffAccounts[0] == null) {
-            System.out.println("! You must create a Bank Account for yourself (Staff Account) before you can deposit money.");
+            System.out.println(
+                    "! You must create a Bank Account for yourself (Staff Account) before you can deposit money.");
             return;
         }
         String staffAccount = staffAccounts[0].getNumberAccount();
@@ -121,7 +126,7 @@ public class AdminController {
             System.out.println("! Invalid amount format.");
             return;
         }
-        
+
         if (amount <= 0) {
             System.out.println("! Amount must be greater than 0.");
             return;
@@ -145,14 +150,13 @@ public class AdminController {
 
     private void blockAccount() {
         System.out.println("\n--- BLOCK ACCOUNT ---");
-        System.out.println("Note: Account must have 0 balance before blocking.");
         System.out.print("Account number to block: ");
         String numberAccount = sc.nextLine().trim();
         if (numberAccount.isEmpty()) {
             System.out.println("! Account number cannot be empty.");
             return;
         }
-        String result = UserAccoutsDAO.deleteAccount(numberAccount);
+        String result = UserAccoutsDAO.blockAccount(numberAccount);
         System.out.println("-> " + result);
     }
 
@@ -203,15 +207,15 @@ public class AdminController {
 
     private void printUserTable(List<Map<String, String>> users) {
         System.out.printf("%-10s | %-25s | %-12s | %-10s | %-8s%n",
-            "UserID", "Name", "Phone", "Role", "BirthDay");
+                "UserID", "Name", "Phone", "Role", "BirthDay");
         System.out.println("-".repeat(80));
         for (Map<String, String> u : users) {
             System.out.printf("%-10s | %-25s | %-12s | %-10s | %-8s%n",
-                u.get("userID"),
-                u.get("userName"),
-                u.get("numberPhone"),
-                u.get("roleUser"),
-                u.get("birthDay"));
+                    u.get("userID"),
+                    u.get("userName"),
+                    u.get("numberPhone"),
+                    u.get("roleUser"),
+                    u.get("birthDay"));
         }
         System.out.println("Total: " + users.size() + " record(s).");
     }

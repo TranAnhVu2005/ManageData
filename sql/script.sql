@@ -554,9 +554,9 @@ delimiter ;
 
 
 
-/*Start Task 8: Delete account* - Vũ*/
+/*Start Task 8: Block account* - Vũ*/
 delimiter $$
-create procedure deleteAccount(
+create procedure blockAccount(
 	in p_numberAccount varchar(10),
     out p_result varchar(200)
 )
@@ -568,15 +568,14 @@ begin
     THEN set p_result ="Not found account";
     ELSEIF v_state != "Active"
     THEN set p_result = "This account is already blocked";
-    ELSEIF v_balance > 0 
-    THEN  set p_result = CONCAT("Balance is ",v_balance,".Please withdraw before deleting");
 	ELSE
 		update ACCOUNTBANK set state = "Blocked" where numberAccount = p_numberAccount;
         set p_result = "Success";
 	END IF;
 end$$
 delimiter ;
-/*End Task 8: Delete account* - Vũ*/
+/*End Task 8: Block account* - Vũ*/
+select * from accountbank;
 
 /*Start Task 10: Change Account PIN* - Vũ*/
 delimiter $$
