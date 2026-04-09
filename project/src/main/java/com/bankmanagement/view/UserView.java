@@ -51,6 +51,7 @@ public class UserView {
                 case 7 -> new UserController(currentUser, sc).viewProfile();
                 case 8 -> new UserController(currentUser, sc).searchTransactionByDate(bankAccounts);
                 case 9 -> new UserController(currentUser, sc).changePin(bankAccounts);
+                case 10 -> new UserController(currentUser, sc).createCard(bankAccounts);
                 case 0 -> { System.out.println("Logged out!"); return; }
                 default -> System.out.println("! Invalid choice.");
             }
@@ -80,6 +81,7 @@ public class UserView {
         System.out.println("|  7.  View profile                  |");
         System.out.println("|  8.  Search transactions by date   |");
         System.out.println("|  9.  Change bank PIN               |");
+        System.out.println("|  10.  Create Card for Bank Account |");
         System.out.println("|  0.  Logout                        |");
         System.out.println("+------------------------------------+");
         System.out.print("Choose: ");
@@ -214,7 +216,18 @@ public class UserView {
      * Dùng khi XÁC THỰC PIN hiện tại: Chỉ nhập 1 lần, không validate định dạng.
      */
     public String enterPin() {
-        return readPassword("Enter PIN: ");
+        while (true) {
+            String pin = readPassword("Enter current PIN: ");
+            if (pin.isEmpty()) {
+                System.out.println("! PIN cannot be empty.");
+                continue;
+            }
+            if (!pin.matches("\\d{6}")) {
+                System.out.println("! Warning: PIN should be 6 digits.");
+                continue;
+            }
+            return pin;
+        }
     }
 
     // =========================================================================
@@ -278,5 +291,14 @@ public class UserView {
         }
         System.out.print(prompt);
         return sc.nextLine().trim();
+    }
+
+    public void showCreateCardResult(int result, String cardNumber) {
+        switch (result) {
+            case 0 -> System.out.println("Card created! Card number: " + cardNumber);
+            case 1 -> System.out.println("! Account not found. Please contact support.");
+            case 2 -> System.out.println("! Server error. Please try again later.");
+            default -> System.out.println("! Unknown error. Please contact support." + result);
+        }
     }
 }

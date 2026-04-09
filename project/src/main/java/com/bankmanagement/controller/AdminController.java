@@ -126,7 +126,7 @@ public class AdminController {
             return;
         }
 
-        String transactionId = "D" + com.bankmanagement.function.generateStringRandom(8) + System.currentTimeMillis() % 10000;
+        String transactionId = "D" + com.bankmanagement.function.generateStringRandom(8, null, null) + System.currentTimeMillis() % 10000;
         int result = UserAccoutsDAO.depositMoney(staffAccount, targetAccount, transactionId, amount);
 
         switch (result) {

@@ -2,11 +2,13 @@ package com.bankmanagement.controller;
 
 import com.bankmanagement.dao.UserAccoutsDAO;
 import com.bankmanagement.function;
+import com.bankmanagement.config.dbConnection;
 import com.bankmanagement.model.BankAccount;
 import com.bankmanagement.model.UserAccount;
 import com.bankmanagement.view.UserView;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -45,7 +47,7 @@ public class UserController {
     }
 
     private void createBankAccountRandom() {
-        String newAccountNumber = function.generateStringRandom(10);
+        String newAccountNumber = function.generateStringRandom(10, "accountBank", "numberAccount");
         String pin = view.getPinCode();
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
         int result = UserAccoutsDAO.createBankAccount(newAccountNumber, pinHash, currentUser.getUserId());
@@ -54,7 +56,7 @@ public class UserController {
 
     private void createBankAccountWithPhone() {
         // Số tài khoản = SĐT + 2 chữ số ngẫu nhiên (đảm bảo dễ nhớ)
-        String newAccountNumber = currentUser.getNumberPhone().substring(2) + function.generateStringRandom(2);
+        String newAccountNumber = currentUser.getNumberPhone().substring(2) + function.generateStringRandom(2, null, null);
         String pin = view.getPinCode();
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
         int result = UserAccoutsDAO.createBankAccount(newAccountNumber, pinHash, currentUser.getUserId());
@@ -69,10 +71,10 @@ public class UserController {
         System.out.println("\n+------ WITHDRAW MONEY ------+");
         System.out.print("Enter 16-digit Card Number: ");
         String cardNumber = sc.nextLine().trim();
-        
+
         System.out.print("Enter Withdrawal Amount: ");
         double amount = readDouble();
-        
+
         if (cardNumber.length() != 16) {
             System.out.println("! Card number must be 16 digits.");
             return;
@@ -88,9 +90,9 @@ public class UserController {
             return;
         }
 
-        String transactionId = "W" + function.generateStringRandom(8) + System.currentTimeMillis() % 10000;
+        String transactionId = "W" + function.generateStringRandom(8, null, null) + System.currentTimeMillis() % 10000;
         int result = UserAccoutsDAO.withdrawMoney(cardNumber, amount, transactionId);
-        
+
         switch (result) {
             case 0 -> System.out.println("-> Withdrawal successful! Please take your cash.");
             case 1 -> System.out.println("! Card not found.");
@@ -114,7 +116,8 @@ public class UserController {
         while (true) {
             view.showBalanceMenu(bankAccounts);
             int choice = readInt();
-            if (choice == 0) return;
+            if (choice == 0)
+                return;
 
             BankAccount selected = pickAccount(bankAccounts, choice);
             if (selected == null) {
@@ -147,7 +150,8 @@ public class UserController {
         view.showBalanceMenu(bankAccounts);
         System.out.print("Select source account: ");
         int choice = readInt();
-        if (choice == 0) return;
+        if (choice == 0)
+            return;
 
         BankAccount source = pickAccount(bankAccounts, choice);
         if (source == null) {
@@ -193,7 +197,8 @@ public class UserController {
         view.showBalanceMenu(bankAccounts);
         System.out.print("Select account to view history: ");
         int choice = readInt();
-        if (choice == 0) return;
+        if (choice == 0)
+            return;
 
         BankAccount selected = pickAccount(bankAccounts, choice);
         if (selected == null) {
@@ -202,8 +207,7 @@ public class UserController {
         }
 
         String[] status = new String[1];
-        List<Map<String, Object>> transactions =
-                UserAccoutsDAO.checkTransaction(selected.getNumberAccount(), status);
+        List<Map<String, Object>> transactions = UserAccoutsDAO.checkTransaction(selected.getNumberAccount(), status);
 
         if (!"Success".equals(status[0])) {
             System.out.println("! " + status[0]);
@@ -227,7 +231,8 @@ public class UserController {
         view.showBalanceMenu(bankAccounts);
         System.out.print("Select account to change PIN: ");
         int choice = readInt();
-        if (choice == 0) return;
+        if (choice == 0)
+            return;
 
         BankAccount selected = pickAccount(bankAccounts, choice);
         if (selected == null) {
@@ -277,7 +282,8 @@ public class UserController {
         view.showBalanceMenu(bankAccounts);
         System.out.print("Select account: ");
         int choice = readInt();
-        if (choice == 0) return;
+        if (choice == 0)
+            return;
 
         BankAccount selected = pickAccount(bankAccounts, choice);
         if (selected == null) {
@@ -344,19 +350,20 @@ public class UserController {
 
         // Hash mật khẩu mới nếu người dùng có nhập — null thì COALESCE giữ hash cũ
         String newPasswordHash = newPassword.isEmpty()
-            ? null
-            : org.mindrot.jbcrypt.BCrypt.hashpw(newPassword, org.mindrot.jbcrypt.BCrypt.gensalt());
+                ? null
+                : org.mindrot.jbcrypt.BCrypt.hashpw(newPassword, org.mindrot.jbcrypt.BCrypt.gensalt());
 
         String result = UserAccoutsDAO.updateInfo(
-            currentUser.getUserId(), newName, newId, newBirthday, newPhone, newEmail, newPasswordHash
-        );
+                currentUser.getUserId(), newName, newId, newBirthday, newPhone, newEmail, newPasswordHash);
 
         System.out.println("-> " + result);
 
         // Cập nhật ngay trong bộ nhớ để menu hiển thị thông tin mới
         if ("Success".equalsIgnoreCase(result)) {
-            if (!newName.isEmpty())  currentUser.setUserName(newName);
-            if (!newPhone.isEmpty()) currentUser.setNumberPhone(newPhone);
+            if (!newName.isEmpty())
+                currentUser.setUserName(newName);
+            if (!newPhone.isEmpty())
+                currentUser.setNumberPhone(newPhone);
         }
     }
 
@@ -365,9 +372,11 @@ public class UserController {
     // =========================================================================
 
     private boolean hasAnyAccount(BankAccount[] accounts) {
-        if (accounts == null) return false;
+        if (accounts == null)
+            return false;
         for (BankAccount acc : accounts) {
-            if (acc != null) return true;
+            if (acc != null)
+                return true;
         }
         return false;
     }
@@ -378,7 +387,8 @@ public class UserController {
      */
     private BankAccount pickAccount(BankAccount[] accounts, int choice) {
         int idx = choice - 1;
-        if (idx < 0 || idx >= accounts.length || accounts[idx] == null) return null;
+        if (idx < 0 || idx >= accounts.length || accounts[idx] == null)
+            return null;
         return accounts[idx];
     }
 
@@ -405,5 +415,40 @@ public class UserController {
         }
         System.out.print(prompt);
         return sc.nextLine().trim();
+    }
+
+    public void createCard(BankAccount[] bankAccounts) {
+        if (!hasAnyAccount(bankAccounts)) {
+            System.out.println("! You don't have any active bank account to create a card for.");
+            return;
+        }
+
+        System.out.println("\n+------ CREATE CARD FOR BANK ACCOUNT ------+");
+        view.showBalanceMenu(bankAccounts);// sử dụng lại menu chọn tài khoản để tạo thẻ cho tài khoản đó
+        System.out.print("Select account to create card for: ");
+        int choice = readInt();
+        if (choice == 0)
+            return;
+
+        BankAccount selected = pickAccount(bankAccounts, choice);// User chọn tài khoản để tạo thẻ
+        if (selected == null) {
+            System.out.println("! Invalid selection.");
+            return;
+        }
+
+        String pin = null;
+        while (true) {
+            pin = view.getPinCode();
+            if (!UserAccoutsDAO.verifyAccountPin(selected.getNumberAccount(), pin)) {
+                System.out.println("! Authentication failed. Incorrect PIN.");
+                continue;
+            }else {
+                break;
+            }           
+        }
+        String cardNumber = function.generateStringRandom(16, "Cards", "cardNumber");
+        String ccv = function.generateStringRandom(3, null, null);
+        int result = UserAccoutsDAO.createCard(cardNumber, selected.getNumberAccount(), pin, ccv);
+        view.showCreateCardResult(result, cardNumber);
     }
 }

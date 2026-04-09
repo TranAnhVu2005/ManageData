@@ -79,6 +79,9 @@ create table TYPEOFTRANSACTION (
     nameTypeOfTransaction varchar(100) not null,
     description varchar(100) not null
 );
+insert into typeoftransaction values ('W001', 'Rút tiền', 'Khách hàng rút tiền từ tài khoản'),
+('T001', 'Chuyển tiền', 'Chuyển tiền giữa các tài khoản'),
+('D001', 'Nạp tiền', 'Nạp tiền vào tài khoản');
 
 create table BANKTRANSACTIONS(
 	transactionId char(30) primary key,
@@ -661,3 +664,36 @@ delimiter ;
 
 
 select * from useraccounts;
+
+/* create card for account */
+delimiter $$
+create procedure createCard(
+    IN p_cardNumber char(16),
+    IN p_numberAccount varchar(10),
+    IN p_pinCode varchar(64),
+    IN p_ccv char(3),
+    OUT p_result int
+) # 0: success, 1: account not found, 2: server error
+proc: begin
+    declare v_accountExists int default 0;
+    declare exit handler for sqlexception
+    begin
+        set p_result = 2; -- server error
+    end;
+    set p_result = 2; -- default to server error
+    -- Kiểm tra tài khoản tồn tại
+    select count(*) into v_accountExists
+    from ACCOUNTBANK
+    where numberAccount = p_numberAccount;
+    if v_accountExists = 0 then
+        set p_result = 1; -- account not found
+        leave proc;
+    end if;
+    -- Tạo thẻ mới
+    insert into CARDS (cardNumber, cardPinCodeHash, created_at, expire_at, secureCode, numberAccount)
+    values (p_cardNumber, p_pinCode, curdate(), date_add(curdate(), interval 5 year), p_ccv, p_numberAccount);
+    set p_result = 0; -- success
+end$$
+delimiter ;
+/*End Task: Create Card for Account* - Loi*/
+

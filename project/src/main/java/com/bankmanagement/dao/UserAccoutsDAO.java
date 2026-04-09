@@ -481,6 +481,39 @@ public class UserAccoutsDAO {
         }
     }
 
+    public static int createCard(String cardNumber, String numberAccount, String pin, String ccv) {
+        String sql = "{call createCard(?,?,?,?,?)}";
+        try (Connection conn = dbConnection.getConnection();
+             CallableStatement cs = conn.prepareCall(sql)) {
+            cs.setString(1, cardNumber);
+            cs.setString(2, numberAccount);
+            String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
+            cs.setString(3, pinHash);
+            cs.setString(4, ccv);
+            cs.registerOutParameter(5, Types.INTEGER);
+            cs.execute();
+            return cs.getInt(5);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static boolean existedString(String tableName, String columnName, String value) {
+        String sql = "SELECT COUNT(*) FROM " + tableName + " WHERE " + columnName + " = ?";
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, value);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.out.println("[DAO] Error checking existence: " + e.getMessage());
+        }
+        return false;
+    }
+
 
 
     // =========================================================================
