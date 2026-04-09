@@ -1,0 +1,23 @@
+#Java & Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE (VS Code, IntelliJ, Eclipse)
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.factorypath
+
+#Log files
+*.log
+build.log
+
+#OS files (Rác của hệ điều hành)
+.DS_Store
+Thumbs.db
