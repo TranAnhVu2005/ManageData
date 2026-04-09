@@ -17,7 +17,15 @@ import java.util.Scanner;
  */
 public class UserView {
 
-    private final Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+    private final Scanner sc;
+
+    public UserView() {
+        this.sc = new Scanner(System.in, StandardCharsets.UTF_8);
+    }
+
+    public UserView(Scanner sc) {
+        this.sc = sc;
+    }
 
     /**
      * Vòng lặp menu chính của Client — tự động tải lại danh sách tài khoản sau mỗi thao tác
@@ -34,15 +42,15 @@ public class UserView {
 
             int choice = readInt();
             switch (choice) {
-                case 1 -> new UserController(currentUser).updateInfo();
-                case 2 -> new UserController(currentUser).transferMoney(bankAccounts);
-                case 3 -> new UserController(currentUser).checkTransaction(bankAccounts);
-                case 4 -> new UserController(currentUser).getBalance(bankAccounts);
-                case 5 -> new UserController(currentUser).withdrawMoney();
-                case 6 -> new UserController(currentUser).createBankAccount(numberOfAccounts);
-                case 7 -> new UserController(currentUser).viewProfile();
-                case 8 -> new UserController(currentUser).searchTransactionByDate(bankAccounts);
-                case 9 -> new UserController(currentUser).changePin(bankAccounts);
+                case 1 -> new UserController(currentUser, sc).updateInfo();
+                case 2 -> new UserController(currentUser, sc).transferMoney(bankAccounts);
+                case 3 -> new UserController(currentUser, sc).checkTransaction(bankAccounts);
+                case 4 -> new UserController(currentUser, sc).getBalance(bankAccounts);
+                case 5 -> new UserController(currentUser, sc).withdrawMoney();
+                case 6 -> new UserController(currentUser, sc).createBankAccount(numberOfAccounts);
+                case 7 -> new UserController(currentUser, sc).viewProfile();
+                case 8 -> new UserController(currentUser, sc).searchTransactionByDate(bankAccounts);
+                case 9 -> new UserController(currentUser, sc).changePin(bankAccounts);
                 case 0 -> { System.out.println("Logged out!"); return; }
                 default -> System.out.println("! Invalid choice.");
             }

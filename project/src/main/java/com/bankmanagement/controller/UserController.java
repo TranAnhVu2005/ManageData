@@ -20,11 +20,13 @@ import java.util.Scanner;
 public class UserController {
 
     private UserAccount currentUser;
-    private final UserView view = new UserView();
-    private final Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+    private final UserView view;
+    private final Scanner sc;
 
-    public UserController(UserAccount user) {
+    public UserController(UserAccount user, Scanner sc) {
         this.currentUser = user;
+        this.sc = sc;
+        this.view = new UserView(sc);
     }
 
     // =========================================================================
@@ -52,7 +54,7 @@ public class UserController {
 
     private void createBankAccountWithPhone() {
         // Số tài khoản = SĐT + 2 chữ số ngẫu nhiên (đảm bảo dễ nhớ)
-        String newAccountNumber = currentUser.getNumberPhone() + function.generateStringRandom(2);
+        String newAccountNumber = currentUser.getNumberPhone().substring(2) + function.generateStringRandom(2);
         String pin = view.getPinCode();
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
         int result = UserAccoutsDAO.createBankAccount(newAccountNumber, pinHash, currentUser.getUserId());

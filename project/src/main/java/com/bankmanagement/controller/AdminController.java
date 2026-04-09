@@ -2,6 +2,7 @@ package com.bankmanagement.controller;
 
 import com.bankmanagement.dao.UserAccoutsDAO;
 import com.bankmanagement.model.UserAccount;
+import com.bankmanagement.model.BankAccount;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
