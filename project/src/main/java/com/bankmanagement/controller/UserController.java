@@ -39,13 +39,18 @@ public class UserController {
     // =========================================================================
 
     public void createBankAccount(int numberOfAccounts) {
-        view.createBankAccountMenu(numberOfAccounts);
-        int choice = readInt();
-        switch (choice) {
-            case 1 -> createBankAccountRandom();
-            case 2 -> createBankAccountWithPhone();
-            case 0 -> System.out.println("Exit create bank account!");
-            default -> System.out.println("! Invalid choice");
+        while (true) {
+            view.createBankAccountMenu(numberOfAccounts);
+            int choice = readInt();
+            switch (choice) {
+                case 1 -> createBankAccountRandom();
+                case 2 -> createBankAccountWithPhone();
+                case 0 -> {
+                    System.out.println("Returning to main menu...");
+                    return;
+                }
+                default -> System.out.println("! Invalid choice. Please select 1, 2, or 0.");
+            }
         }
     }
 
@@ -59,7 +64,8 @@ public class UserController {
 
     private void createBankAccountWithPhone() {
         // Số tài khoản = SĐT + 2 chữ số ngẫu nhiên (đảm bảo dễ nhớ)
-        String newAccountNumber = currentUser.getNumberPhone().substring(2) + function.generateStringRandom(2, null, null, null);
+        String newAccountNumber = currentUser.getNumberPhone().substring(2)
+                + function.generateStringRandom(2, null, null, null);
         String pin = view.getPinCode();
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
         int result = UserAccoutsDAO.createBankAccount(newAccountNumber, pinHash, currentUser.getUserId());
@@ -77,30 +83,48 @@ public class UserController {
             System.out.println("! You don't have any active card to withdraw from.");
             return;
         }
-        view.showCardsMenu(cards);
-        System.out.print("Select card to withdraw from: ");
-        int choice = readInt();
-        if (choice == 0)
-            return;
+        while (true) {
+            view.showCardsMenu(cards);
+            System.out.print("Select card to withdraw from: ");
+            int choice = readInt();
+            if (choice == 0)
+                return;
+            if (choice < 1 || choice > cards.length || cards[choice - 1] == null) {
+                System.out.println("! Invalid selection. Please try again.");
+                continue;
+            }
 
-        Cards selectedCard = cards[choice - 1];
-        String cardNumber = selectedCard.getCardNumber();
-        String pin = view.enterPin();
-        if (!UserAccoutsDAO.verifyCardPin(cardNumber, pin)) {
-            System.out.println("! Authentication failed. Incorrect Card PIN.");
-            return;
-        }
-        System.out.print("Enter Withdrawal Amount: ");
-        double amount = readDouble();
+            Cards selectedCard = cards[choice - 1];
+            String cardNumber = selectedCard.getCardNumber();
+            String pin = view.enterPin();
+            if (!UserAccoutsDAO.verifyCardPin(cardNumber, pin)) {
+                System.out.println("! Authentication failed. Incorrect Card PIN. Please try again.");
+                continue;
+            }
+            System.out.print("Enter Withdrawal Amount: ");
+            double amount = readDouble();
 
-        if (amount <= 0) {
-            System.out.println("! Amount must be greater than 0.");
-            return;
-        }
-
-        String transactionId = function.generateStringRandom(29, null, null, "W"); // Mã giao dịch bắt đầu bằng 'W' để dễ phân biệt
-        int result = UserAccoutsDAO.withdrawMoney(cardNumber, amount, transactionId);
-        view.showWithdrawResult(result);
+            if (amount <= 0) {
+                System.out.println("! Amount must be greater than 0. Please try again.");
+                continue;
+            }
+            String transactionId = function.generateStringRandom(29, null, null, "W"); // Mã giao dịch bắt đầu bằng 'W' để
+                                                                                   // dễ phân biệt
+            int result = UserAccoutsDAO.withdrawMoney(cardNumber, amount, transactionId);
+            view.showWithdrawResult(result);
+            while (true) {
+                System.out.print("Do you want to perform another withdrawal? (Y/N): ");
+                String again = sc.nextLine().trim().toUpperCase();
+                if ("Y".equals(again)) {
+                    break; // Thoát vòng hỏi lại, quay về menu chọn thẻ
+                } else if ("N".equals(again)) {
+                    System.out.println("Returning to main menu...");
+                    return; // Thoát hẳn khỏi chức năng rút tiền
+                } else {
+                    System.out.println("! Invalid input. Please enter Y or N.");
+                }
+            }
+        }  
     }
 
     // =========================================================================
@@ -442,9 +466,9 @@ public class UserController {
             if (!UserAccoutsDAO.verifyAccountPin(selected.getNumberAccount(), pin)) {
                 System.out.println("! Authentication failed. Incorrect PIN.");
                 continue;
-            }else {
+            } else {
                 break;
-            }           
+            }
         }
         String cardNumber = function.generateStringRandom(16, "Cards", "cardNumber", null);
         String ccv = function.generateStringRandom(3, null, null, null);

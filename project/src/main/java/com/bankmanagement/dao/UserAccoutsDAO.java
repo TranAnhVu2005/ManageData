@@ -599,6 +599,25 @@ public class UserAccoutsDAO {
         return false;
     }
 
+    public static Map<String, String> getSystemStatistics() {
+        String sql = "call getSystemStatistics(?,?,?)";
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement cs = conn.prepareCall(sql)) {
+            cs.registerOutParameter(1, Types.VARCHAR);
+            cs.registerOutParameter(2, Types.VARCHAR);
+            cs.registerOutParameter(3, Types.VARCHAR);
+            cs.execute();
+            Map<String, String> stats = new HashMap<>();
+            stats.put("totalUsers", cs.getString(1));
+            stats.put("totalAccounts", cs.getString(2));
+            stats.put("totalBalance", cs.getString(3));
+            return stats;
+        } catch (SQLException e) {
+            System.out.println("[DAO] Error fetching system statistics: " + e.getMessage());
+        }
+        return new HashMap<>();
+    }
+
     // =========================================================================
     // PRIVATE HELPER
     // =========================================================================
