@@ -387,7 +387,7 @@ begin
                     destinationAccount
             ) values
             (
-				CONCAT("TRSF",DATE_FORMAT(NOW(),"%Y%m%d%H%i%s"),FLOOR(RAND()*1000)),
+				CONCAT("TRSF",random_string(10)),
                 p_amount,
                 "Success",
                 "T001",
@@ -788,3 +788,5 @@ begin
 end$$
 delimiter ;
 /*End Statistics total money in system*/
+select * from accountbank;
+update accountbank set state = "Active" where numberAccount = "7419173014";
