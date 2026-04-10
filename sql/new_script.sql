@@ -71,6 +71,7 @@ CREATE TABLE USERAUDITLOGS (
     foreign key (userID) references USERACCOUNTS(userID) on update cascade on delete cascade
 );
 
+select * from STAFFAUDITLOGS;
 CREATE TABLE STAFFAUDITLOGS (
     logId int auto_increment primary key,
     staffID varchar(10) not null,
@@ -80,31 +81,9 @@ CREATE TABLE STAFFAUDITLOGS (
     foreign key (staffID) references USERACCOUNTS(userID) on update cascade
 );
 
--- =============================================================================
--- 2. VIEWS
--- =============================================================================
-
-CREATE VIEW VIEW_TRANSACTION_SUMMARY AS
-SELECT 
-    DATE(created_at) AS transaction_date,
-    typeOfTransactionCode,
-    COUNT(*) AS total_transactions,
-    SUM(amount) AS total_amount
-FROM BANKTRANSACTIONS
-GROUP BY DATE(created_at), typeOfTransactionCode;
-
-CREATE VIEW VIEW_USER_FINANCIAL_HEALTH AS
-SELECT 
-    u.userID,
-    u.userName,
-    COUNT(a.numberAccount) AS total_accounts,
-    COALESCE(SUM(a.balance), 0) AS total_balance
-FROM USERACCOUNTS u
-LEFT JOIN ACCOUNTBANK a ON u.userID = a.userID
-GROUP BY u.userID, u.userName;
 
 -- =============================================================================
--- 3. SEED DATA (Initial inserts)
+-- 2. SEED DATA (Initial inserts)
 -- =============================================================================
 
 INSERT INTO TYPEOFTRANSACTION VALUES 
@@ -127,7 +106,7 @@ VALUES (
 );
 
 -- =============================================================================
--- 4. FUNCTIONS & TRIGGERS
+-- 3. FUNCTIONS & TRIGGERS
 -- =============================================================================
 
 DELIMITER $$
@@ -193,7 +172,7 @@ END$$
 select * from USERAUDITLOGS;
 
 -- =============================================================================
--- 5. STORED PROCEDURES
+-- 4. STORED PROCEDURES
 -- =============================================================================
 
 /* Task 1: Create account */
@@ -636,6 +615,7 @@ DELIMITER ;
 
 
 /* Task 16: Statistics total money in system */
+delimiter $$
 CREATE PROCEDURE getSystemStatistics(
     OUT p_totalUsers int, OUT p_totalAccounts int, OUT p_totalBalance double
 )
@@ -651,6 +631,33 @@ CREATE PROCEDURE logStaffAction(
 )
 BEGIN
     INSERT INTO STAFFAUDITLOGS (staffID, actionType, targetInfo) VALUES (p_staffID, p_actionType, p_targetInfo);
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE viewStaffLogs(
+    IN p_keyword varchar(100), OUT p_result varchar(200)
+)
+BEGIN
+    DECLARE v_targetStaffID varchar(10);
+    
+    -- Dò tìm mã nhân viên dựa trên Staff ID HOẶC Số điện thoại
+    SELECT userID INTO v_targetStaffID 
+    FROM USERACCOUNTS 
+    WHERE (userID = p_keyword OR numberPhone = p_keyword) AND roleUser = 'Staff' LIMIT 1;
+    
+    IF v_targetStaffID IS NULL THEN 
+        SET p_result = "Staff not found";
+    ELSE
+        SELECT logId, actionType, targetInfo, actionAt 
+        FROM STAFFAUDITLOGS 
+        WHERE staffID = v_targetStaffID 
+        ORDER BY logId DESC;
+        
+        SET p_result = "Success";
+    END IF;
 END$$
 
 DELIMITER ;

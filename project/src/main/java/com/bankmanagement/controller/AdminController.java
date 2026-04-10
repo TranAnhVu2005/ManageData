@@ -36,6 +36,7 @@ public class AdminController {
                 case 6 -> viewSystemStatistics();
                 case 7 -> updateProfile();
                 case 8 -> viewAllCustomers();
+                case 9 -> viewStaffLogs();
                 case 0 -> {
                     view.showMessage("Logging out...");
                     return;
@@ -109,7 +110,8 @@ public class AdminController {
         }
 
         String transactionId = "D" + System.currentTimeMillis();
-        int result = AdminDAO.depositMoney(currentUser.getUserId(), targetAccount, staffBankAccounts.get(0).getNumberAccount(), transactionId, amount);
+        int result = AdminDAO.depositMoney(currentUser.getUserId(), targetAccount,
+                staffBankAccounts.get(0).getNumberAccount(), transactionId, amount);
 
         switch (result) {
             case 0 -> {
@@ -186,6 +188,25 @@ public class AdminController {
             view.showMessage("No logs recorded for this user.");
         } else {
             view.displayAuditLogs(logs, keyword);
+        }
+    }
+
+    private void viewStaffLogs() {
+        String keyword = view.getStaffSearchKeyword();
+        if (keyword.isEmpty())
+            return;
+
+        String[] status = new String[1];
+        List<Map<String, Object>> logs = AdminDAO.viewStaffLogs(keyword, status);
+
+        if ("Staff not found".equals(status[0])) {
+            view.showError("No staff member found with ID or Phone: " + keyword);
+        } else if (status[0] != null && status[0].startsWith("Error")) {
+            view.showError(status[0]);
+        } else if (logs.isEmpty()) {
+            view.showMessage("No logs recorded for this staff member.");
+        } else {
+            view.displayStaffLogs(logs, keyword);
         }
     }
 }
