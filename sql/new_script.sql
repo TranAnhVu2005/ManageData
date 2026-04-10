@@ -342,22 +342,36 @@ END$$
 
 /* Task 5: Check balance */
 delimiter $$
-create procedure checkTransaction(
-	in p_numberAccount varchar(10),
-    out p_result varchar(200)
+create procedure checkBalance (
+	IN p_numberAccount varchar(10),
+    OUT p_balance decimal(15, 2),
+    OUT p_result int # 0:success, 1:no account, 3:blocked, 4: server error
 )
-begin
-	declare v_state enum("Active","Blocked");
-	select state into v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
-    IF v_state is null
-    THEN set p_result ="Not found account";
-    ELSEIF v_state!="Active"
-    THEN set p_result = "This account is blocked";
-	ELSE 
-		select * from BANKTRANSACTIONS where numberAccount = p_numberAccount or destinationAccount = p_numberAccount;
-        set p_result = "Success";
-	END IF;
-end $$
+proc: begin
+    DECLARE v_state ENUM('Active','Blocked');
+    
+    set p_result = 4;
+    set p_balance = null;
+    
+    select state, balance
+    into v_state, p_balance
+    from ACCOUNTBANK
+    where numberAccount = p_numberAccount;
+    
+    if v_state is null then
+		set p_result = 1;
+        set p_balance = NULL;
+        leave proc;
+	end if;
+    
+    if v_state = "Blocked" then
+		set p_result = 3;
+        set p_balance = NULL;
+        leave proc;
+	end if;
+    
+    set p_result = 0;
+end$$
 delimiter ;
 
 -- select * from useraccounts;
