@@ -18,7 +18,7 @@ public class UserView {
     public void showMenu(UserAccount user, List<BankAccount> accounts) {
         System.out.println("\n--- CLIENT BANKING SERVICES ---");
         System.out.println("Welcome back, " + user.getUserName());
-        
+
         if (accounts.isEmpty()) {
             System.out.println("[!] You don't have any active bank accounts yet.");
         } else {
@@ -66,7 +66,7 @@ public class UserView {
         String email = sc.nextLine().trim();
         System.out.print("New Password: ");
         String pass = sc.nextLine().trim();
-        return new String[]{name, phone, email, pass};
+        return new String[] { name, phone, email, pass };
     }
 
     public String[] getTransferInput() {
@@ -74,7 +74,7 @@ public class UserView {
         String dest = sc.nextLine().trim();
         System.out.print("Amount to transfer: ");
         String amount = sc.nextLine().trim();
-        return new String[]{dest, amount};
+        return new String[] { dest, amount };
     }
 
     public String[] getWithdrawInput(String cardNumber) {
@@ -83,12 +83,12 @@ public class UserView {
         String pin = sc.nextLine().trim();
         System.out.print("Amount to withdraw: ");
         String amount = sc.nextLine().trim();
-        return new String[]{pin, amount};
+        return new String[] { pin, amount };
     }
 
     public void displayProfile(Map<String, String> profile) {
         System.out.println("\n--- Your Identity Profile ---");
-        System.out.printf("  %-15s : %s%n", "User ID", profile.get("userID"));
+        // System.out.printf(" %-15s : %s%n", "User ID", profile.get("userID"));
         System.out.printf("  %-15s : %s%n", "Full Name", profile.get("userName"));
         System.out.printf("  %-15s : %s%n", "ID Card", profile.get("ID"));
         System.out.printf("  %-15s : %s%n", "Phone", profile.get("numberPhone"));
@@ -99,30 +99,34 @@ public class UserView {
     }
 
     public int selectAccount(List<BankAccount> accounts, String title) {
-        if (accounts.isEmpty()) return -1;
+        if (accounts.isEmpty())
+            return -1;
         System.out.println("\n--- " + title + " ---");
         for (int i = 0; i < accounts.size(); i++) {
-            System.out.printf("%d. %s\n", (i + 1), 
+            System.out.printf("%d. %s\n", (i + 1),
                     accounts.get(i).getNumberAccount());
         }
         System.out.println("0. Cancel");
         System.out.print("Choose account: ");
         int sel = getChoice();
-        if (sel > 0 && sel <= accounts.size()) return sel - 1;
+        if (sel > 0 && sel <= accounts.size())
+            return sel - 1;
         return -1;
     }
 
     public int selectCard(List<com.bankmanagement.model.Cards> cards, String title) {
-        if (cards.isEmpty()) return -1;
+        if (cards.isEmpty())
+            return -1;
         System.out.println("\n--- " + title + " ---");
         for (int i = 0; i < cards.size(); i++) {
-            System.out.printf("%d. Card: %s (Attached to Acc: %s)%n", 
+            System.out.printf("%d. Card: %s (Attached to Acc: %s)%n",
                     (i + 1), cards.get(i).getCardNumber(), cards.get(i).getNumberAccount());
         }
         System.out.println("0. Cancel");
         System.out.print("Choose card: ");
         int sel = getChoice();
-        if (sel > 0 && sel <= cards.size()) return sel - 1;
+        if (sel > 0 && sel <= cards.size())
+            return sel - 1;
         return -1;
     }
 
@@ -148,7 +152,7 @@ public class UserView {
         String from = sc.nextLine().trim();
         System.out.print("To Date (yyyy-MM-dd): ");
         String to = sc.nextLine().trim();
-        return new String[]{from, to};
+        return new String[] { from, to };
     }
 
     public String enterPin(String prompt) {
@@ -163,7 +167,7 @@ public class UserView {
         String pin = sc.nextLine().trim();
         System.out.print("Security Code (3 digits): ");
         String ccv = sc.nextLine().trim();
-        return new String[]{num, pin, ccv};
+        return new String[] { num, pin, ccv };
     }
 
     public int getAccountGenerationChoice() {

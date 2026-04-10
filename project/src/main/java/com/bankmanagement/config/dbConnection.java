@@ -46,15 +46,15 @@ public class dbConnection {
             config.setPassword("");
 
             // cấu hình pool
-            config.setMaximumPoolSize(10);   // tối đa 10 connection
-            config.setMinimumIdle(2);        // giữ sẵn 2 connection
-            config.setIdleTimeout(30000);    // 30s
-            config.setMaxLifetime(1800000);  // 30 phút
+            config.setMaximumPoolSize(10); // tối đa 10 connection
+            config.setMinimumIdle(2); // giữ sẵn 2 connection
+            config.setIdleTimeout(30000); // 30s
+            config.setMaxLifetime(1800000); // 30 phút
             config.setConnectionTimeout(30000); // 30s
 
             dataSource = new HikariDataSource(config);
 
-            System.out.println("HikariCP initialized successfully");
+            // System.out.println("HikariCP initialized successfully");
 
         } catch (Exception e) {
             System.out.println("Failed to initialize HikariCP");
