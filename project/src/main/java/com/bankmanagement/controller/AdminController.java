@@ -2,6 +2,7 @@ package com.bankmanagement.controller;
 
 import com.bankmanagement.dao.AdminDAO;
 import com.bankmanagement.dao.UserAccountsDAO;
+import com.bankmanagement.model.BankAccount;
 import com.bankmanagement.model.UserAccount;
 import com.bankmanagement.view.AdminView;
 
@@ -81,6 +82,20 @@ public class AdminController {
     }
 
     private void depositMoney() {
+        List<BankAccount> staffBankAccounts = UserAccountsDAO.getActiveAccountByUserId(currentUser.getUserId());
+        if (staffBankAccounts.isEmpty()) {
+            view.showError("No active staff bank accounts found. You cannot perform deposits.");
+            return;
+        }
+        if (staffBankAccounts.isEmpty()) {
+            System.out.println("[!] You don't have any active bank accounts yet.");
+        } else {
+            System.out.print("Active Accounts: ");
+            for (BankAccount acc : staffBankAccounts) {
+                System.out.print("[" + acc.getNumberAccount() + "] ");
+            }
+            System.out.println();
+        }
         String[] input = view.getDepositInput();
         String targetAccount = input[0];
         double amount;
@@ -94,7 +109,7 @@ public class AdminController {
         }
 
         String transactionId = "D" + System.currentTimeMillis();
-        int result = AdminDAO.depositMoney(currentUser.getUserId(), targetAccount, transactionId, amount);
+        int result = AdminDAO.depositMoney(currentUser.getUserId(), targetAccount, staffBankAccounts.get(0).getNumberAccount(), transactionId, amount);
 
         switch (result) {
             case 0 -> {

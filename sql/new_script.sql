@@ -55,7 +55,7 @@ CREATE TABLE BANKTRANSACTIONS (
     stateOfTransaction enum("Processing", "Success", "Cancel") not null default "Processing",
     typeOfTransactionCode char(4) not null,
     numberAccount varchar(10) not null,
-    destinationAccount varchar(10),
+    destinationAccount varchar(10) not null,
     foreign key (typeOfTransactionCode) references TYPEOFTRANSACTION(typeOfTransactionCode) on update cascade on delete cascade,
     foreign key (numberAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade,
     foreign key (destinationAccount) references ACCOUNTBANK(numberAccount) on update cascade on delete cascade
@@ -308,6 +308,7 @@ delimiter ;
 -- delete from useraccounts where userID = "STAFF00001";
 -- update useraccounts set roleUser = "Staff" where userID =  "U741759";
 /* Task 4: Transfer money */
+delimiter $$
 CREATE PROCEDURE transferMoney(
     IN p_numberAccount varchar(10), IN p_destinationAccount varchar(10),
     IN p_amount decimal(15,2), OUT p_result varchar(200)
@@ -340,24 +341,31 @@ BEGIN
 END$$
 
 /* Task 5: Check balance */
-CREATE PROCEDURE checkBalance (
-    IN p_numberAccount varchar(10), OUT p_balance decimal(15, 2), OUT p_result int 
+delimiter $$
+create procedure checkTransaction(
+	in p_numberAccount varchar(10),
+    out p_result varchar(200)
 )
-proc: BEGIN
-    DECLARE v_state ENUM('Active','Blocked');
-    SET p_result = 4; SET p_balance = null;
-    SELECT state, balance INTO v_state, p_balance FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
-    
-    IF v_state is null THEN SET p_result = 1; SET p_balance = NULL; LEAVE proc; END IF;
-    IF v_state = "Blocked" THEN SET p_result = 3; SET p_balance = NULL; LEAVE proc; END IF;
-    SET p_result = 0;
-END$$
+begin
+	declare v_state enum("Active","Blocked");
+	select state into v_state from ACCOUNTBANK where numberAccount = p_numberAccount;
+    IF v_state is null
+    THEN set p_result ="Not found account";
+    ELSEIF v_state!="Active"
+    THEN set p_result = "This account is blocked";
+	ELSE 
+		select * from BANKTRANSACTIONS where numberAccount = p_numberAccount or destinationAccount = p_numberAccount;
+        set p_result = "Success";
+	END IF;
+end $$
+delimiter ;
 
 -- select * from useraccounts;
 -- UPDATE USERACCOUNTS 
 -- SET passWordHash = '$2a$10$.22Mp10PjLZ5q5lVZbMQMeN7u5tjrcTQWNlvrPpa2BTSpS215kF6C'
 -- WHERE userID = 'U559559';
 /* Task 6: Check transaction */
+delimiter $$
 CREATE PROCEDURE checkTransaction(
     IN p_numberAccount varchar(10), OUT p_result varchar(200)
 )
@@ -373,9 +381,15 @@ BEGIN
 END$$
 
 /* Task 7: Deposit money */
+DROP PROCEDURE IF EXISTS depositMoney;
+delimiter $$
 CREATE PROCEDURE depositMoney(
-    IN p_staffID VARCHAR(10), IN p_numberAccountUser VARCHAR(10), 
-    IN p_transactionId CHAR(30), IN p_amount DECIMAL(15,2), OUT p_result INT
+    IN p_staffID VARCHAR(10), -- Chỉ cần ID nhân viên để ghi log (Ai thực hiện nạp)
+    IN p_numberAccountUser VARCHAR(10),
+    IN p_numberAccountStaff varchar(10),
+    IN p_transactionId CHAR(30), 
+    IN p_amount DECIMAL(15,2), 
+    OUT p_result INT
 )
 proc: BEGIN
     DECLARE v_role VARCHAR(20) DEFAULT NULL;
@@ -389,29 +403,40 @@ proc: BEGIN
     SET p_result = 2;
     IF p_amount <= 0 THEN LEAVE proc; END IF;
 
-    SELECT u.ROLEUSER INTO v_role FROM ACCOUNTBANK a JOIN USERACCOUNTS u ON a.USERID = u.USERID WHERE a.NUMBERACCOUNT = p_numberAccountUser;
+    -- Kiểm tra tài khoản khách hàng
+    SELECT u.ROLEUSER INTO v_role 
+    FROM ACCOUNTBANK a JOIN USERACCOUNTS u ON a.USERID = u.USERID 
+    WHERE a.NUMBERACCOUNT = p_numberAccountUser;
+    
     IF v_role IS NULL THEN SET p_result = 1; LEAVE proc; END IF;
     IF v_role <> 'Client' THEN SET p_result = 5; LEAVE proc; END IF;
 
+    -- Kiểm tra người thực hiện có phải Staff không (Dựa vào ID)
     SELECT ROLEUSER INTO v_role FROM USERACCOUNTS WHERE USERID = p_staffID;
     IF v_role <> 'Staff' THEN SET p_result = 5; LEAVE proc; END IF;
 
+    -- Ghi log giao dịch (destinationAccount = null hoặc 'CASH')
     INSERT INTO BANKTRANSACTIONS (TRANSACTIONID, AMOUNT, STATEOFTRANSACTION, TYPEOFTRANSACTIONCODE, NUMBERACCOUNT, DESTINATIONACCOUNT)
-    VALUES (p_transactionId, p_amount, 'Processing', 'D001', p_numberAccountUser, NULL);
+    VALUES (p_transactionId, p_amount, 'Processing', 'D001', p_numberAccountStaff, p_numberAccountUser);
 
     START TRANSACTION;
+        -- CHỈ CỘNG TIỀN VÀO TÀI KHOẢN KHÁCH HÀNG (Không trừ của ai cả)
         UPDATE ACCOUNTBANK SET BALANCE = BALANCE + p_amount WHERE NUMBERACCOUNT = p_numberAccountUser;
+        
         IF ROW_COUNT() = 0 THEN
             SET p_result = 2; ROLLBACK;
             UPDATE BANKTRANSACTIONS SET STATEOFTRANSACTION = 'Cancel' WHERE TRANSACTIONID = p_transactionId;
             LEAVE proc;
         END IF;
+        
         UPDATE BANKTRANSACTIONS SET STATEOFTRANSACTION = 'Success' WHERE TRANSACTIONID = p_transactionId;
         SET p_result = 0;
     COMMIT;
 END$$
+delimiter ;
 
 /* Task 8: Block account */
+delimiter $$
 CREATE PROCEDURE blockAccount(
     IN p_numberAccount varchar(10), OUT p_result varchar(200)
 )
@@ -568,8 +593,7 @@ end$$
 delimiter ;
 
 /* Task 15: View Audit Logs */
-DELIMITER $$
-DROP PROCEDURE IF EXISTS viewAuditLogs$$
+delimiter $$
 CREATE PROCEDURE viewAuditLogs(
     IN p_keyword varchar(100), OUT p_result varchar(200)
 )

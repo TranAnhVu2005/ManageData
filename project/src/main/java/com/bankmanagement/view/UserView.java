@@ -108,7 +108,7 @@ public class UserView {
             System.out.printf("%d. %s\n", (i + 1),
                     accounts.get(i).getNumberAccount());
         }
-        System.out.println("0. Cancel");
+        System.out.println("Any other key. Cancel");
         System.out.print("Choose account: ");
         int sel = getChoice();
         if (sel > 0 && sel <= accounts.size())
@@ -124,7 +124,7 @@ public class UserView {
             System.out.printf("%d. Card: %s (Attached to Acc: %s)%n",
                     (i + 1), cards.get(i).getCardNumber(), cards.get(i).getNumberAccount());
         }
-        System.out.println("0. Cancel");
+        System.out.println("Other key. Cancel");
         System.out.print("Choose card: ");
         int sel = getChoice();
         if (sel > 0 && sel <= cards.size())
@@ -163,7 +163,7 @@ public class UserView {
                 // NẠP TIỀN
                 actionName = "Deposit";
                 displayAmount = String.format("+%,.0f", amount); // Tiền vào (+)
-                peer = "Cash/Staff";
+                peer = "FromBank";
             } else if ("W001".equals(typeCode)) {
                 // RÚT TIỀN
                 actionName = "Withdraw";
@@ -207,6 +207,22 @@ public class UserView {
         return sc.nextLine().trim();
     }
 
+    // Overloaded method for PIN entry with confirmation (used in AdminController
+    // for setting card PIN)
+    public String enterPin(String prompt, boolean confirm) {
+        System.out.print(prompt + ": ");
+        String pin1 = sc.nextLine().trim();
+        if (confirm) {
+            System.out.print("Confirm " + prompt + ": ");
+            String pin2 = sc.nextLine().trim();
+            if (!pin1.equals(pin2)) {
+                showError("PIN entries do not match.");
+                return null;
+            }
+        }
+        return pin1;
+    }
+
     public String[] getCreateCardInput() {
         System.out.print("New Card Number (16 digits): ");
         String num = sc.nextLine().trim();
@@ -221,6 +237,7 @@ public class UserView {
         System.out.println("\n--- Choose Account Number Generation Strategy ---");
         System.out.println("  1. Random 10-digit number");
         System.out.println("  2. Phone-based number (Phone + 2 random digits)");
+        System.out.println("Other. Cancel");
         System.out.print("Your choice: ");
         return getChoice();
     }
@@ -235,5 +252,7 @@ public class UserView {
 
     public void showSuccess(String msg) {
         System.out.println("[SUCCESS] " + msg);
+        System.out.println("Press Enter to continue...");
+        sc.nextLine();
     }
 }
