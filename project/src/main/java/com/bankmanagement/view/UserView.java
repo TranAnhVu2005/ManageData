@@ -66,7 +66,9 @@ public class UserView {
         String email = sc.nextLine().trim();
         System.out.print("New Password: ");
         String pass = sc.nextLine().trim();
-        return new String[] { name, phone, email, pass };
+        System.out.print("Current Password: ");
+        String passCurrent = sc.nextLine().trim();
+        return new String[] { name, phone, email, pass, passCurrent };
     }
 
     public String[] getTransferInput() {

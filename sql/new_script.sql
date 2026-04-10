@@ -178,7 +178,7 @@ END$$
 
 /* Task 2: Update account */
 CREATE PROCEDURE updateInfo(
-    IN p_userID varchar(10), IN p_userName varchar(200), IN p_ID char(12),
+    IN p_userID varchar(10), IN p_userName varchar(200),
     IN p_birthDay date, IN p_numberPhone varchar(15), IN p_email varchar(100),
     IN p_passwordHashNew varchar(200), OUT p_result varchar(200)
 )
@@ -187,7 +187,6 @@ BEGIN
     
     UPDATE USERACCOUNTS SET
         userName = COALESCE(p_userName, userName),
-        ID = COALESCE(p_ID, ID),
         birthDay = COALESCE(p_birthDay, birthDay),
         numberPhone = COALESCE(p_numberPhone, numberPhone),
         email = COALESCE(p_email, email),
