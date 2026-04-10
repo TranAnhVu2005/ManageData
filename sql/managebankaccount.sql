@@ -1,5 +1,5 @@
 -- =============================================================================
--- BANK MANAGEMENT SYSTEM - MASTER SCRIPT
+-- BANK MANAGEMENT SYSTEM
 -- =============================================================================
 
 DROP DATABASE IF EXISTS MANAGEBANKACCOUNT;
@@ -177,7 +177,7 @@ DELIMITER ;
 DELIMITER $$
 CREATE PROCEDURE createUserAccount (
     IN p_userID varchar(10), IN p_userName varchar(200), IN p_ID char(12),
-    IN p_passwordHash varchar(2000), IN p_birthday date, IN p_numberPhone varchar(15),
+    IN p_passwordHash varchar(200), IN p_birthday date, IN p_numberPhone varchar(10),
     IN p_email varchar(100), IN p_roleUser varchar(20), OUT p_result varchar(200)
 )
 BEGIN
@@ -191,7 +191,7 @@ DELIMITER ;
 DELIMITER $$
 CREATE PROCEDURE updateInfo(
     IN p_userID varchar(10), IN p_userName varchar(200),
-    IN p_birthDay date, IN p_numberPhone varchar(15), IN p_email varchar(100),
+    IN p_birthDay date, IN p_numberPhone varchar(10), IN p_email varchar(100),
     IN p_passwordHashNew varchar(200), OUT p_result varchar(200)
 )
 BEGIN
@@ -286,40 +286,50 @@ proc: begin
 end$$
 delimiter ;
 
--- select * from useraccounts;
--- delete from useraccounts where userID = "STAFF00001";
--- update useraccounts set roleUser = "Staff" where userID =  "U741759";
+
 /* Task 4: Transfer money */
-delimiter $$
+DELIMITER $$
 CREATE PROCEDURE transferMoney(
     IN p_numberAccount varchar(10), IN p_destinationAccount varchar(10),
     IN p_amount decimal(15,2), OUT p_result varchar(200)
 )
-BEGIN
+proc: BEGIN
     DECLARE v_balance decimal(15,2);
     DECLARE v_state enum("Active","Blocked");
     DECLARE v_state_des enum("Active","Blocked");
     DECLARE exit handler for sqlexception 
     BEGIN ROLLBACK; SET p_result = "Error transaction"; END;
     
-    SELECT balance, state INTO v_balance, v_state FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
+    -- 1. Chỉ check trạng thái tài khoản ở ngoài
+    SELECT state INTO v_state FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
     SELECT state INTO v_state_des FROM ACCOUNTBANK WHERE numberAccount = p_destinationAccount;
     
-    IF v_state is null THEN SET p_result ="Not found account";
-    ELSEIF v_state_des is null THEN SET p_result ="Not found account destination";
-    ELSEIF v_state_des != "Active" THEN SET p_result = "The account destination is not active";
-    ELSEIF v_state!="Active" THEN SET p_result = "This account is blocked";
-    ELSEIF p_amount <= 0 THEN SET p_result = "Amount must be > 0";
-    ELSEIF p_amount > v_balance THEN SET p_result = "Not enough balance";
-    ELSE
-        START TRANSACTION;
-            UPDATE ACCOUNTBANK SET balance = balance - p_amount WHERE numberAccount = p_numberAccount;
-            UPDATE ACCOUNTBANK SET balance = balance + p_amount WHERE numberAccount = p_destinationAccount;
-            INSERT INTO BANKTRANSACTIONS(transactionID, amount, stateOfTransaction, typeofTransactionCode, numberAccount, destinationAccount) 
-            VALUES (CONCAT("TRSF",random_string(10)), p_amount, "Success", "T001", p_numberAccount, p_destinationAccount);
-        COMMIT;
+    IF v_state is null THEN SET p_result ="Not found account"; LEAVE proc; END IF;
+    IF v_state_des is null THEN SET p_result ="Not found account destination"; LEAVE proc; END IF;
+    IF v_state_des != "Active" THEN SET p_result = "The account destination is not active"; LEAVE proc; END IF;
+    IF v_state != "Active" THEN SET p_result = "This account is blocked"; LEAVE proc; END IF;
+    IF p_amount <= 0 THEN SET p_result = "Amount must be > 0"; LEAVE proc; END IF;
+
+    -- 2. BẬT BẢO VỆ VÀ LẤY SỐ DƯ (CÓ KHÓA DÒNG - FOR UPDATE)
+    START TRANSACTION;
+        SELECT balance INTO v_balance FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount FOR UPDATE;
+        
+        -- Check số dư ở bên trong Transaction
+        IF p_amount > v_balance THEN 
+            SET p_result = "Not enough balance";
+            ROLLBACK;
+            LEAVE proc;
+        END IF;
+
+        -- Tiến hành trừ/cộng tiền
+        UPDATE ACCOUNTBANK SET balance = balance - p_amount WHERE numberAccount = p_numberAccount;
+        UPDATE ACCOUNTBANK SET balance = balance + p_amount WHERE numberAccount = p_destinationAccount;
+        
+        INSERT INTO BANKTRANSACTIONS(transactionID, amount, stateOfTransaction, typeofTransactionCode, numberAccount, destinationAccount) 
+        VALUES (CONCAT("TRSF",random_string(10)), p_amount, "Success", "T001", p_numberAccount, p_destinationAccount);
+        
         SET p_result = "Success";
-    END IF;
+    COMMIT;
 END$$
 DELIMITER ;
 
@@ -450,7 +460,7 @@ END$$
 
 /* Task 9: Create accountBank */
 CREATE PROCEDURE createBankAccount (
-    IN p_numberAccount VARCHAR(12), IN p_pinCodeHash VARCHAR(64), IN p_userID VARCHAR(10), OUT p_result INT
+    IN p_numberAccount VARCHAR(10), IN p_pinCodeHash VARCHAR(64), IN p_userID VARCHAR(10), OUT p_result INT
 )
 proc: BEGIN
     DECLARE v_exist INT DEFAULT 0;
@@ -638,7 +648,7 @@ BEGIN
     SELECT COALESCE(sum(balance), 0) INTO p_totalBalance FROM ACCOUNTBANK;
 END$$
 
-/* Log Staff Actions */
+/* Task 17: Log Staff Actions */
 CREATE PROCEDURE logStaffAction(
     IN p_staffID varchar(10), IN p_actionType varchar(100), IN p_targetInfo varchar(500)
 )
@@ -650,6 +660,7 @@ DELIMITER ;
 
 DELIMITER $$
 
+/* Task 18: View Staff Logs */
 CREATE PROCEDURE viewStaffLogs(
     IN p_keyword varchar(100), OUT p_result varchar(200)
 )
