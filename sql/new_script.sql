@@ -37,7 +37,7 @@ CREATE TABLE ACCOUNTBANK (
     foreign key (userID) references USERACCOUNTS(userID) on update cascade on delete cascade
 );
 
-CREATE TABLE BANKCARDS (
+CREATE TABLE CARDS (
     cardNumber char(16) primary key,
     cardPinCodeHash varchar(64) not null,
     created_at date not null,
@@ -114,7 +114,7 @@ INSERT INTO TYPEOFTRANSACTION VALUES
 INSERT INTO USERACCOUNTS (userID, userName, ID, passWordHash, birthDay, numberPhone, email, roleUser)
 VALUES (
     'STAFF00001', 'Van Teo', '111111111111', 
-    '$2a$10$BuHGpV5BogFkqHpYz0H0sO2unKxmx/cLqd2EDM4VI.g7v.Zk2fYYq', 
+    '$2a$10$BuHGpV5BogFkqHpYz0H0sO2unKxmx/cLqd2EDM4VI.g7v.Zk2fYYq', #password: 123456
     '2000-12-12', '0123456789', 'vanteo@gmail.com', 'Staff'
 );
 
