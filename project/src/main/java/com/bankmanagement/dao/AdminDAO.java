@@ -15,8 +15,11 @@ import java.util.Map;
  */
 public class AdminDAO {
 
-    /** Đăng tiền mặt vào tài khoản khách hàng (Nghiệp vụ do nhân viên thực hiện). */
-    public static int depositMoney(String staffId, String userAccount, String staffAccount, String transactionId, double amount) {
+    /**
+     * Đăng tiền mặt vào tài khoản khách hàng (Nghiệp vụ do nhân viên thực hiện).
+     */
+    public static int depositMoney(String staffId, String userAccount, String staffAccount, String transactionId,
+            double amount) {
         String sql = "{call depositMoney(?,?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
                 CallableStatement cs = conn.prepareCall(sql)) {
@@ -197,5 +200,43 @@ public class AdminDAO {
         } catch (SQLException e) {
             System.err.println("[AdminDAO] Error logging staff action: " + e.getMessage());
         }
+    }
+
+    /** Xem lịch sử hoạt động của nhân viên (Staff) */
+    public static List<Map<String, Object>> viewStaffLogs(String keyword, String[] status) {
+        List<Map<String, Object>> logs = new ArrayList<>();
+        String sql = "{call viewStaffLogs(?, ?)}";
+
+        try (Connection conn = dbConnection.getConnection();
+                CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, keyword);
+            stmt.registerOutParameter(2, Types.VARCHAR);
+
+            boolean hasResultSet = stmt.execute();
+
+            // Xả ResultSet an toàn để không lỗi ngầm
+            do {
+                if (hasResultSet) {
+                    try (ResultSet rs = stmt.getResultSet()) {
+                        while (rs.next()) {
+                            Map<String, Object> row = new HashMap<>();
+                            row.put("logId", rs.getInt("logId"));
+                            row.put("actionType", rs.getString("actionType"));
+                            row.put("targetInfo", rs.getString("targetInfo"));
+                            row.put("actionAt", rs.getString("actionAt")); // Dùng getString chống lỗi Timezone
+                            logs.add(row);
+                        }
+                    }
+                }
+                hasResultSet = stmt.getMoreResults();
+            } while (hasResultSet || stmt.getUpdateCount() != -1);
+
+            status[0] = stmt.getString(2);
+
+        } catch (SQLException e) {
+            status[0] = "Error: " + e.getMessage();
+        }
+        return logs;
     }
 }

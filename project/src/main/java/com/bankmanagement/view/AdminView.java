@@ -23,6 +23,7 @@ public class AdminView {
         System.out.println("  6. System Statistics & Reports");
         System.out.println("  7. Update My Profile (Staff)");
         System.out.println("  8. View All Customers");
+        System.out.println("  9. View Staff Logs");
         System.out.println("  0. Logout");
         System.out.println("==================================");
         System.out.print("Your Choice: ");
@@ -139,6 +140,36 @@ public class AdminView {
         System.out.print("New Password (min 6 chars): ");
         String pass = sc.nextLine().trim();
         return new String[] { name, phone, email, pass };
+    }
+
+    // 1. Hàm hỏi nhập ID hoặc SĐT
+    public String getStaffSearchKeyword() {
+        System.out.print("Enter Staff ID or Phone to view logs: ");
+        return sc.nextLine().trim();
+    }
+
+    // 2. Hàm in bảng lịch sử của nhân viên
+    public void displayStaffLogs(List<Map<String, Object>> logs, String keyword) {
+        System.out
+                .println("\n=========================================================================================");
+        System.out.printf(" ACTIVITY LOGS FOR STAFF: %-61s %n", keyword);
+        System.out.println("=========================================================================================");
+        System.out.printf("%-6s | %-20s | %-35s | %-20s%n", "Log ID", "Action", "Target Info", "Time");
+        System.out.println("-----------------------------------------------------------------------------------------");
+
+        for (Map<String, Object> log : logs) {
+            String target = log.get("targetInfo") != null ? log.get("targetInfo").toString() : "-";
+            if (target.length() > 35)
+                target = target.substring(0, 32) + "...";
+
+            String time = log.get("actionAt") != null ? log.get("actionAt").toString() : "-";
+            if (time.endsWith(".0"))
+                time = time.substring(0, time.length() - 2);
+
+            System.out.printf("%-6s | %-20s | %-35s | %-20s%n",
+                    log.get("logId"), log.get("actionType"), target, time);
+        }
+        System.out.println("=========================================================================================");
     }
 
     public int getChoice() {
