@@ -156,19 +156,21 @@ public class AdminController {
     }
 
     private void viewAuditLogs() {
-        String userId = view.getAuditLogUserId();
-        if (userId.isEmpty())
+        String keyword = view.getSearchKeyword();
+        if (keyword.isEmpty())
             return;
 
         String[] status = new String[1];
-        List<Map<String, Object>> logs = AdminDAO.viewAuditLogs(userId, status);
+        List<Map<String, Object>> logs = AdminDAO.viewAuditLogs(keyword, status);
 
         if ("User not found".equals(status[0])) {
+            view.showError("No customer found with Phone/ID: " + keyword);
+        } else if (status[0] != null && status[0].startsWith("Error")) {
             view.showError(status[0]);
         } else if (logs.isEmpty()) {
             view.showMessage("No logs recorded for this user.");
         } else {
-            view.displayAuditLogs(logs);
+            view.displayAuditLogs(logs, keyword);
         }
     }
 }

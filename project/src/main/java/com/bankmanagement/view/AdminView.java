@@ -34,7 +34,7 @@ public class AdminView {
         String acc = sc.nextLine().trim();
         System.out.print("Amount to Deposit: ");
         String amount = sc.nextLine().trim();
-        return new String[]{acc, amount};
+        return new String[] { acc, amount };
     }
 
     public String getAccountNumber(String action) {
@@ -61,31 +61,70 @@ public class AdminView {
         sc.nextLine();
     }
 
-    @SuppressWarnings("unchecked")
     public void displayUsers(List<Map<String, String>> users) {
-        System.out.println("\n--- Customer List ---");
-        System.out.printf("%-12s | %-20s | %-12s | %-10s%n", "UserID", "Full Name", "Phone", "Role");
-        System.out.println("------------------------------------------------------------------");
+        System.out.println(
+                "\n===============================================================================================================");
+        System.out.printf("%-10s | %-20s | %-12s | %-12s | %-5s | %-35s%n",
+                "User ID", "Full Name", "ID Card", "Phone", "Accs", "Bank Accounts (State)");
+        System.out.println(
+                "---------------------------------------------------------------------------------------------------------------");
+
         for (Map<String, String> u : users) {
-            System.out.printf("%-12s | %-20s | %-12s | %-10s%n",
-                    u.get("userID"), u.get("userName"), u.get("numberPhone"), u.get("roleUser"));
+            System.out.printf("%-10s | %-20s | %-12s | %-12s | %-5s | %-35s%n",
+                    u.get("userID"),
+                    u.get("userName"),
+                    u.get("ID"),
+                    u.get("numberPhone"),
+                    u.get("totalAccounts"), // Số lượng tài khoản
+                    u.get("accountList") // Chuỗi danh sách tài khoản
+            );
         }
-        System.out.println("Total: " + users.size() + " records found.");
+        System.out.println(
+                "===============================================================================================================");
     }
 
-    public void displayAuditLogs(List<Map<String, Object>> logs) {
-        System.out.println("\n--- Audit Logs ---");
-        System.out.printf("%-5s | %-15s | %-18s | %-18s | %-20s%n",
-                "ID", "Action", "Old Value", "New Value", "Time");
-        System.out.println("-------------------------------------------------------------------------------------");
+    public void displayAuditLogs(List<Map<String, Object>> logs, String targetUser) {
+        if (logs == null || logs.isEmpty()) {
+            System.out.println("\n[!] No audit logs found for customer: " + targetUser);
+            return;
+        }
+
+        System.out.println(
+                "\n=====================================================================================================================");
+        System.out.printf(" AUDIT LOGS FOR CUSTOMER (Phone/ID): %-76s %n", targetUser);
+        System.out.println(
+                "=====================================================================================================================");
+        // Nới rộng cột Value lên 30 ký tự để chứa vừa Email dài
+        System.out.printf("%-6s | %-16s | %-30s | %-30s | %-20s%n", "Log ID", "Action", "Old Value", "New Value",
+                "Time");
+        System.out.println(
+                "---------------------------------------------------------------------------------------------------------------------");
+
         for (Map<String, Object> log : logs) {
-            System.out.printf("%-5s | %-15s | %-18s | %-18s | %-20s%n",
+            // Xử lý an toàn: Nếu dữ liệu null thì in ra dấu "-" thay vì chữ "null"
+            String oldVal = log.get("oldValue") != null ? log.get("oldValue").toString() : "-";
+            String newVal = log.get("newValue") != null ? log.get("newValue").toString() : "-";
+            String time = log.get("changedAt") != null ? log.get("changedAt").toString() : "-";
+
+            // Cắt bớt chuỗi nếu quá 30 ký tự (Chống vỡ bảng Console)
+            if (oldVal.length() > 30)
+                oldVal = oldVal.substring(0, 27) + "...";
+            if (newVal.length() > 30)
+                newVal = newVal.substring(0, 27) + "...";
+
+            // Xóa đuôi ".0" ở phần millisecond của biến Timestamp (nếu có) cho đẹp
+            if (time.endsWith(".0"))
+                time = time.substring(0, time.length() - 2);
+
+            System.out.printf("%-6s | %-16s | %-30s | %-30s | %-20s%n",
                     log.get("logId"),
                     log.get("actionType"),
-                    log.get("oldValue"),
-                    log.get("newValue"),
-                    log.get("changedAt"));
+                    oldVal,
+                    newVal,
+                    time);
         }
+        System.out.println(
+                "=====================================================================================================================");
     }
 
     public String[] getUpdateProfileInput() {
@@ -99,7 +138,7 @@ public class AdminView {
         String email = sc.nextLine().trim();
         System.out.print("New Password (min 6 chars): ");
         String pass = sc.nextLine().trim();
-        return new String[]{name, phone, email, pass};
+        return new String[] { name, phone, email, pass };
     }
 
     public int getChoice() {
@@ -117,7 +156,7 @@ public class AdminView {
     public void showError(String msg) {
         System.out.println("[ERROR] " + msg);
     }
-    
+
     public void showSuccess(String msg) {
         System.out.println("[SUCCESS] " + msg);
     }

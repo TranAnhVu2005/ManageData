@@ -10,6 +10,7 @@ USE MANAGEBANKACCOUNT;
 -- 1. CREATING TABLES (Ordered by dependencies)
 -- =============================================================================
 
+select * from USERACCOUNTS;
 CREATE TABLE USERACCOUNTS (	
     userID varchar(10) primary key,
     userName varchar(200) not null,
@@ -146,19 +147,50 @@ BEGIN
     RETURN rs;
 END$$
 
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS log_user_update$$
 CREATE TRIGGER log_user_update
 AFTER UPDATE ON USERACCOUNTS
 FOR EACH ROW
 BEGIN
+    -- 1. Lưu vết đổi Số điện thoại
     IF OLD.numberPhone <> NEW.numberPhone THEN
         INSERT INTO USERAUDITLOGS (userID, actionType, oldValue, newValue)
         VALUES (NEW.userID, 'Change Phone', OLD.numberPhone, NEW.numberPhone);
     END IF;
+    
+    -- 2. Lưu vết đổi Email
     IF OLD.email <> NEW.email THEN
         INSERT INTO USERAUDITLOGS (userID, actionType, oldValue, newValue)
         VALUES (NEW.userID, 'Change Email', OLD.email, NEW.email);
     END IF;
+
+    -- 3. Lưu vết đổi CCCD/CMND (Thông tin định danh cốt lõi)
+    IF OLD.ID <> NEW.ID THEN
+        INSERT INTO USERAUDITLOGS (userID, actionType, oldValue, newValue)
+        VALUES (NEW.userID, 'Change ID Card', OLD.ID, NEW.ID);
+    END IF;
+
+    -- 4. Lưu vết đổi Tên (Chống mạo danh)
+    IF OLD.userName <> NEW.userName THEN
+        INSERT INTO USERAUDITLOGS (userID, actionType, oldValue, newValue)
+        VALUES (NEW.userID, 'Change Name', OLD.userName, NEW.userName);
+    END IF;
+
+    -- 5. Lưu vết đổi Mật khẩu (Che giấu giá trị thật bằng dấu ***)
+    IF OLD.passWordHash <> NEW.passWordHash THEN
+        INSERT INTO USERAUDITLOGS (userID, actionType, oldValue, newValue)
+        VALUES (NEW.userID, 'Change Password', '***', '***');
+    END IF;
+
+    -- 6. Lưu vết đổi Phân quyền (Cực kỳ nhạy cảm - Chống leo thang đặc quyền)
+    IF OLD.roleUser <> NEW.roleUser THEN
+        INSERT INTO USERAUDITLOGS (userID, actionType, oldValue, newValue)
+        VALUES (NEW.userID, 'Change Role', OLD.roleUser, NEW.roleUser);
+    END IF;
 END$$
+select * from USERAUDITLOGS;
 
 -- =============================================================================
 -- 5. STORED PROCEDURES
@@ -272,6 +304,9 @@ proc: begin
 end$$
 delimiter ;
 
+-- select * from useraccounts;
+-- delete from useraccounts where userID = "STAFF00001";
+-- update useraccounts set roleUser = "Staff" where userID =  "U741759";
 /* Task 4: Transfer money */
 CREATE PROCEDURE transferMoney(
     IN p_numberAccount varchar(10), IN p_destinationAccount varchar(10),
@@ -318,6 +353,10 @@ proc: BEGIN
     SET p_result = 0;
 END$$
 
+-- select * from useraccounts;
+-- UPDATE USERACCOUNTS 
+-- SET passWordHash = '$2a$10$.22Mp10PjLZ5q5lVZbMQMeN7u5tjrcTQWNlvrPpa2BTSpS215kF6C'
+-- WHERE userID = 'U559559';
 /* Task 6: Check transaction */
 CREATE PROCEDURE checkTransaction(
     IN p_numberAccount varchar(10), OUT p_result varchar(200)
@@ -450,21 +489,36 @@ BEGIN
 END$$
 
 /* Task 12: Search user by phone or ID */
+DELIMITER $$
 CREATE PROCEDURE searchUser(
     IN p_keyword varchar(100), OUT p_result varchar(200)
 )
 BEGIN
     DECLARE v_count int default 0;
-    SELECT count(*) INTO v_count FROM USERACCOUNTS WHERE numberPhone like concat('%', p_keyword, '%') or ID like concat('%', p_keyword, '%');
 
-    IF v_count = 0 THEN SET p_result = "Not found";
+    -- Đếm xem có User nào khớp không (Dùng DISTINCT để không bị đếm trùng do JOIN)
+    SELECT count(DISTINCT u.userID) INTO v_count 
+    FROM USERACCOUNTS u
+    WHERE u.numberPhone = p_keyword OR u.ID = p_keyword;
+
+    IF v_count = 0 THEN 
+        SET p_result = "Not found";
     ELSE
-        SELECT userID, userName, ID, birthDay, numberPhone, email, roleUser
-        FROM USERACCOUNTS
-        WHERE numberPhone like concat('%', p_keyword, '%') or ID like concat('%', p_keyword, '%');
+        -- Dùng LEFT JOIN để lấy thông tin tài khoản ngân hàng (nếu có)
+        -- Dùng GROUP_CONCAT để gom nhiều dòng tài khoản thành 1 chuỗi
+        SELECT 
+            u.userID, u.userName, u.ID, u.birthDay, u.numberPhone, u.email, u.roleUser,
+            COUNT(a.numberAccount) AS totalAccounts,
+            IFNULL(GROUP_CONCAT(CONCAT(a.numberAccount, ' [', a.state, ']') SEPARATOR ', '), 'No accounts yet') AS accountList
+        FROM USERACCOUNTS u
+        LEFT JOIN ACCOUNTBANK a ON u.userID = a.userID
+        WHERE u.numberPhone = p_keyword OR u.ID = p_keyword
+        GROUP BY u.userID, u.userName, u.ID, u.birthDay, u.numberPhone, u.email, u.roleUser;
+        
         SET p_result = "Success";
     END IF;
 END$$
+
 
 /* Task 13: Unblock account */
 CREATE PROCEDURE unblockAccount(
@@ -514,20 +568,34 @@ end$$
 delimiter ;
 
 /* Task 15: View Audit Logs */
+DELIMITER $$
+DROP PROCEDURE IF EXISTS viewAuditLogs$$
 CREATE PROCEDURE viewAuditLogs(
-    IN p_userID varchar(10), OUT p_result varchar(200)
+    IN p_keyword varchar(100), OUT p_result varchar(200)
 )
 BEGIN
-    DECLARE v_exists int;
-    SELECT count(*) INTO v_exists FROM USERACCOUNTS WHERE userID = p_userID;
+    DECLARE v_count int default 0;
     
-    IF v_exists = 0 THEN SET p_result = "User not found";
+    SELECT count(*) INTO v_count 
+    FROM USERACCOUNTS 
+    WHERE numberPhone = p_keyword OR ID = p_keyword;
+    
+    IF v_count = 0 THEN 
+        SET p_result = "User not found";
     ELSE
-        SELECT logId, actionType, oldValue, newValue, changedAt 
-        FROM USERAUDITLOGS WHERE userID = p_userID ORDER BY changedAt desc;
+        SELECT l.logId, l.actionType, l.oldValue, l.newValue, l.changedAt 
+        FROM USERAUDITLOGS l
+        JOIN USERACCOUNTS u ON l.userID = u.userID
+        WHERE u.numberPhone = p_keyword OR u.ID = p_keyword
+        -- THAY ĐỔI Ở DÒNG NÀY: Dùng logId để sắp xếp, đảm bảo tuyệt đối không bao giờ bị lộn xộn
+        ORDER BY l.logId DESC;
+        
         SET p_result = "Success";
     END IF;
 END$$
+
+DELIMITER ;
+
 
 /* Task 16: Statistics total money in system */
 CREATE PROCEDURE getSystemStatistics(
@@ -548,3 +616,4 @@ BEGIN
 END$$
 
 DELIMITER ;
+

@@ -133,20 +133,65 @@ public class UserView {
     }
 
     public void showTransactionTable(List<Map<String, Object>> transactions, String myAccount) {
-        System.out.println("\n--- Transaction History for " + myAccount + " ---");
-        System.out.printf("%-20s | %-12s | %-5s | %-12s | %-10s%n",
-                "Time", "Amount", "Dir", "Account", "State");
-        System.out.println("----------------------------------------------------------------------");
+        if (transactions == null || transactions.isEmpty()) {
+            System.out.println("\n[!] No transactions found for account: " + myAccount);
+            return;
+        }
+
+        System.out
+                .println("\n=========================================================================================");
+        System.out.printf(" TRANSACTION HISTORY: %-60s %n", myAccount);
+        System.out.println("=========================================================================================");
+        System.out.printf("%-20s | %-16s | %-10s | %-15s | %-10s%n",
+                "Time", "Amount (VND)", "Type", "Counterpart", "State");
+        System.out.println("-----------------------------------------------------------------------------------------");
 
         for (Map<String, Object> t : transactions) {
             String from = (String) t.get("numberAccount");
             String to = (String) t.get("destinationAccount");
-            String dir = myAccount.equals(from) ? "OUT" : "IN";
-            String peer = myAccount.equals(from) ? (to != null ? to : "N/A") : from;
+            String typeCode = (String) t.get("type"); // W001, T001, D001
+            double amount = (Double) t.get("amount");
+            String state = (String) t.get("state");
+            String time = (String) t.get("created_at");
 
-            System.out.printf("%-20s | %-12s | %-5s | %-12s | %-10s%n",
-                    t.get("created_at"), t.get("amount"), dir, peer, t.get("state"));
+            String displayAmount = "";
+            String actionName = "";
+            String peer = ""; // Đối tác giao dịch
+
+            // Phân loại giao dịch dựa trên mã Type Code
+            if ("D001".equals(typeCode)) {
+                // NẠP TIỀN
+                actionName = "Deposit";
+                displayAmount = String.format("+%,.0f", amount); // Tiền vào (+)
+                peer = "Cash/Staff";
+            } else if ("W001".equals(typeCode)) {
+                // RÚT TIỀN
+                actionName = "Withdraw";
+                displayAmount = String.format("-%,.0f", amount); // Tiền ra (-)
+                peer = "ATM/Card";
+            } else if ("T001".equals(typeCode)) {
+                // CHUYỂN TIỀN
+                actionName = "Transfer";
+                if (myAccount.equals(from)) {
+                    // Mình là người gửi (Tiền ra)
+                    displayAmount = String.format("-%,.0f", amount);
+                    peer = (to != null) ? to : "Unknown";
+                } else {
+                    // Mình là người nhận (Tiền vào)
+                    displayAmount = String.format("+%,.0f", amount);
+                    peer = from;
+                }
+            } else {
+                // Loại giao dịch khác (Dự phòng)
+                actionName = typeCode;
+                displayAmount = String.format(" %,.0f", amount);
+                peer = "Unknown";
+            }
+
+            System.out.printf("%-20s | %-16s | %-10s | %-15s | %-10s%n",
+                    time, displayAmount, actionName, peer, state);
         }
+        System.out.println("=========================================================================================");
     }
 
     public String[] getDateRange() {

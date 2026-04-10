@@ -8,12 +8,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Data Access Object chuyên biệt cho các nghiệp vụ Quản trị/Nhân viên (Staff/Admin).
- * Giúp tách biệt logic quản lý hệ thống khỏi các nghiệp vụ ngân hàng của khách hàng.
+ * Data Access Object chuyên biệt cho các nghiệp vụ Quản trị/Nhân viên
+ * (Staff/Admin).
+ * Giúp tách biệt logic quản lý hệ thống khỏi các nghiệp vụ ngân hàng của khách
+ * hàng.
  */
 public class AdminDAO {
 
-    /** Đăng tiền mặt vào tài khoản khách hàng (Nghiệp vụ do nhân viên thực hiện). */
+    /**
+     * Đăng tiền mặt vào tài khoản khách hàng (Nghiệp vụ do nhân viên thực hiện).
+     */
     public static int depositMoney(String staffId, String userAccount, String transactionId, double amount) {
         String sql = "{call depositMoney(?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
@@ -106,6 +110,8 @@ public class AdminDAO {
                             u.put("numberPhone", rs.getString("numberPhone"));
                             u.put("email", rs.getString("email"));
                             u.put("roleUser", rs.getString("roleUser"));
+                            u.put("totalAccounts", rs.getString("totalAccounts"));
+                            u.put("accountList", rs.getString("accountList"));
                             users.add(u);
                         }
                     }
@@ -121,30 +127,40 @@ public class AdminDAO {
     }
 
     /** Xem lịch sử thay đổi thông tin của một người dùng bất kỳ. */
-    public static List<Map<String, Object>> viewAuditLogs(String userId, String[] status) {
+    /** Xem lịch sử thay đổi thông tin bằng SĐT hoặc CCCD. */
+    public static List<Map<String, Object>> viewAuditLogs(String keyword, String[] status) {
         List<Map<String, Object>> logs = new ArrayList<>();
         String sql = "{call viewAuditLogs(?, ?)}";
+
         try (Connection conn = dbConnection.getConnection();
                 CallableStatement stmt = conn.prepareCall(sql)) {
-            stmt.setString(1, userId);
+
+            stmt.setString(1, keyword); // Truyền SĐT hoặc CCCD
             stmt.registerOutParameter(2, Types.VARCHAR);
 
             boolean hasResultSet = stmt.execute();
-            status[0] = stmt.getString(2);
 
-            if (hasResultSet) {
-                try (ResultSet rs = stmt.getResultSet()) {
-                    while (rs.next()) {
-                        Map<String, Object> row = new HashMap<>();
-                        row.put("logId", rs.getInt("logId"));
-                        row.put("actionType", rs.getString("actionType"));
-                        row.put("oldValue", rs.getString("oldValue"));
-                        row.put("newValue", rs.getString("newValue"));
-                        row.put("changedAt", rs.getTimestamp("changedAt"));
-                        logs.add(row);
+            // XẢ TOÀN BỘ RESULT SET TRƯỚC (Giống hàm search và checkTransaction)
+            do {
+                if (hasResultSet) {
+                    try (ResultSet rs = stmt.getResultSet()) {
+                        while (rs.next()) {
+                            Map<String, Object> row = new HashMap<>();
+                            row.put("logId", rs.getInt("logId"));
+                            row.put("actionType", rs.getString("actionType"));
+                            row.put("oldValue", rs.getString("oldValue"));
+                            row.put("newValue", rs.getString("newValue"));
+                            row.put("changedAt", rs.getString("changedAt"));
+                            logs.add(row);
+                        }
                     }
                 }
-            }
+                hasResultSet = stmt.getMoreResults();
+            } while (hasResultSet || stmt.getUpdateCount() != -1);
+
+            // ĐỌC BIẾN OUT SAU KHI ĐÃ XỬ LÝ XONG RESULT SET
+            status[0] = stmt.getString(2);
+
         } catch (SQLException e) {
             status[0] = "Error: " + e.getMessage();
         }
