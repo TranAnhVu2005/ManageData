@@ -218,6 +218,10 @@ public class UserController {
     private void updateInfo() {
         String[] input = view.getUpdateInfoInput();
         String hash = null;
+        if (!UserAccountsDAO.verifyUserPassword(currentUser.getUserId(), input[4])) {
+            System.out.println("Incorrect current password");
+            return;
+        }
         if (!input[3].isEmpty()) {
             hash = org.mindrot.jbcrypt.BCrypt.hashpw(input[3], org.mindrot.jbcrypt.BCrypt.gensalt());
         }
