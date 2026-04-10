@@ -622,6 +622,7 @@ DELIMITER ;
 
 
 /* Task 16: Statistics total money in system */
+delimiter $$
 CREATE PROCEDURE getSystemStatistics(
     OUT p_totalUsers int, OUT p_totalAccounts int, OUT p_totalBalance double
 )
