@@ -353,6 +353,7 @@ public class UserAccountsDAO {
             cs.execute();
             return cs.getInt(5);
         } catch (Exception e) {
+            System.err.println("[DAO] Error creating card: " + e.getMessage());
             return -1;
         }
     }

@@ -92,28 +92,43 @@ public class UserController {
             return;
         Cards selCard = cards.get(idx);
 
-        String[] input = view.getWithdrawInput(selCard.getCardNumber()); // pin, amount
-        String pin = input[0];
+        String[] input = null;
+        String pin = null;
         double amount;
-        try {
-            amount = Double.parseDouble(input[1]);
-            if (amount <= 0)
-                throw new NumberFormatException();
-        } catch (Exception e) {
-            view.showError("Invalid amount.");
-            return;
+        while (true) {
+            input = view.getWithdrawInput(selCard.getCardNumber()); // pin, amount
+            pin = input[0];
+            if (!pin.matches("\\d{6}")) {
+                view.showError("PIN must be 6 digits.");
+                continue;
+            }
+            if (input[1].isEmpty()) {
+                view.showError("Amount cannot be empty.");
+                continue;
+            }
+            if (!UserAccountsDAO.verifyCardPin(selCard.getCardNumber(), pin)) {
+                view.showError("Incorrect Card PIN.");
+                continue;
+            }
+            try {
+                amount = Double.parseDouble(input[1]);
+                if (amount <= 0) {
+                    view.showError("Amount must be positive.");
+                    continue;
+                }
+            } catch (NumberFormatException e) {
+                view.showError("Invalid amount format.");
+                continue;
+            }
+            break;
         }
 
-        if (UserAccountsDAO.verifyCardPin(selCard.getCardNumber(), pin)) {
-            String tid = "W" + System.currentTimeMillis();
-            int res = UserAccountsDAO.withdrawMoney(selCard.getCardNumber(), amount, tid);
-            if (res == 0)
-                view.showSuccess("Withdrawal successful!");
-            else
-                view.showError("Withdrawal failed. Error code: " + res);
-        } else {
-            view.showError("Incorrect Card PIN.");
-        }
+        String tid = function.generateStringRandom(29, "BANKTRANSACTIONS", "transactionId", "W");
+        int res = UserAccountsDAO.withdrawMoney(selCard.getCardNumber(), amount, tid);
+        if (res == 0)
+            view.showSuccess("Withdrawal successful! Please collect your money. Then check your balance or transactions for details.");
+        else
+            view.showError("Withdrawal failed. Error code: " + res);
     }
 
     private void getBalance(List<BankAccount> accounts) {
@@ -239,17 +254,27 @@ public class UserController {
             return;
 
         BankAccount sel = accounts.get(idx);
-        String pin = view.enterPin("Confirm Account PIN");
-        if (!UserAccountsDAO.verifyAccountPin(sel.getNumberAccount(), pin)) {
-            view.showError("Incorrect PIN.");
-            return;
+        String pin = null;
+        while (true) {
+            pin = view.enterPin("Set 6-digit Bank Account PIN");
+            if (pin.matches("\\d{6}"))
+                break;
+            view.showError("PIN must be 6 digits.");
         }
 
-        String[] cardInput = view.getCreateCardInput();
-        int res = UserAccountsDAO.createCard(cardInput[0], sel.getNumberAccount(), cardInput[1], cardInput[2]);
+        String cardNumber = function.generateStringRandom(16, "CARDS", "cardNumber", null);
+        String cardPin = null;
+        while (true) {
+            cardPin = view.enterPin("Set 6-digit Card PIN");
+            if (cardPin.matches("\\d{6}"))
+                break;
+            view.showError("PIN must be 6 digits.");
+        }
+        String ccv = function.generateStringRandom(3, null, null, null);
+        int res = UserAccountsDAO.createCard(cardNumber, sel.getNumberAccount(), cardPin, ccv);
         if (res == 0)
-            view.showSuccess("Card created: " + cardInput[0]);
+            view.showSuccess("Card created: " + cardNumber);
         else
-            view.showError("Failed to create card.");
+            view.showError("Failed to create card." + res);
     }
 }

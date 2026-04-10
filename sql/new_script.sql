@@ -199,46 +199,79 @@ BEGIN
 END$$
 
 /* Task 3: Withdraw money */
-CREATE PROCEDURE withDrawMoney (
-    IN p_cardNumber char(16), IN p_amount decimal(15, 2),
-    IN p_transactionId char(30), OUT p_result INT 
+delimiter $$
+create procedure withDrawMoney (
+	IN p_cardNumber char(16),
+    IN p_amount decimal(15, 2),
+    IN p_transactionId char(30),
+    OUT p_result INT # 0: success, 1: no card number, 3: not enough balance, 4: error by server, 5: not authorization
 )
-proc: BEGIN
-    DECLARE v_numberAccount varchar(10) default NULL;
-    DECLARE v_balance decimal(15, 2) default 0;
-    DECLARE v_role varchar(20) default NULL;
-    DECLARE exit handler for sqlexception
-    BEGIN
-        ROLLBACK;
-        UPDATE BANKTRANSACTIONS SET stateOfTransaction = 'Cancel' WHERE transactionId = p_transactionId;
-        SET p_result = 4;
-    END;
+proc: begin
+    declare v_numberAccount varchar(10) default NULL;
+    declare v_balance decimal(15, 2) default 0;
+    declare v_role varchar(20) default NULL;
+    declare exit handler for sqlexception
+    begin
+		rollback;
+        update BANKTRANSACTIONS
+			set stateOfTransaction = 'Cancel'
+			where transactionId = p_transactionId;
+		set p_result = 4;
+    end;
     
-    SET p_result = 4;
-    IF p_amount <= 0 THEN SET p_result = 4; LEAVE proc; END IF;
+    set p_result = 4;
     
-    SELECT numberAccount INTO v_numberAccount FROM BANKCARDS WHERE cardNumber = p_cardNumber;
-    IF v_numberAccount is null THEN SET p_result = 1; LEAVE proc; END IF;
+    if p_amount <= 0 then
+		set p_result = 4;
+		leave proc;
+	end if;
     
-    SELECT u.roleUser INTO v_role FROM ACCOUNTBANK a JOIN USERACCOUNTS u ON a.userID = u.userID WHERE a.numberAccount = v_numberAccount;
-    IF v_role <> 'Client' THEN SET p_result = 5; LEAVE proc; END IF;
-    
-    INSERT INTO BANKTRANSACTIONS VALUES (p_transactionId, NOW(), p_amount, 'Processing', 'W001', v_numberAccount, v_numberAccount);
-    
-    START TRANSACTION;
-    SELECT balance INTO v_balance FROM ACCOUNTBANK WHERE numberAccount = v_numberAccount FOR UPDATE;
-    
-    IF v_balance < p_amount THEN
-        SET p_result = 3; ROLLBACK;
-        UPDATE BANKTRANSACTIONS SET stateOfTransaction = 'Cancel' WHERE transactionId = p_transactionId;
+    select numberAccount
+    into v_numberAccount
+    from CARDS
+    where cardNumber = p_cardNumber;
+
+    if v_numberAccount is null then
+        set p_result = 1;
         LEAVE proc;
     END IF;
     
-    UPDATE ACCOUNTBANK SET balance = balance - p_amount WHERE numberAccount = v_numberAccount;
-    UPDATE BANKTRANSACTIONS SET stateOfTransaction = 'Success' WHERE transactionId = p_transactionId;
-    SET p_result = 0;
-    COMMIT;
-END$$
+    select u.roleUser
+		into v_role
+		from ACCOUNTBANK a
+		join USERACCOUNTS u on a.userID = u.userID
+		where a.numberAccount = v_numberAccount;
+    if v_role <> 'Client' then
+        set p_result = 5;
+        leave proc;
+	end if;
+    
+    INSERT INTO BANKTRANSACTIONS
+    VALUES (p_transactionId, NOW(), p_amount, 'Processing', 'W001', v_numberAccount, v_numberAccount);
+    
+    start transaction;
+    
+    select balance
+    into v_balance
+    from ACCOUNTBANK
+    where numberAccount = v_numberAccount
+    for update;
+    
+    if v_balance < p_amount then
+		set p_result = 3;
+        rollback;
+        update BANKTRANSACTIONS
+			set stateOfTransaction = 'Cancel'
+			where transactionId = p_transactionId;
+        leave proc;
+	end if;
+    
+    update ACCOUNTBANK set balance = balance - p_amount where numberAccount = v_numberAccount;
+    update BANKTRANSACTIONS set stateOfTransaction = 'Success' where transactionId = p_transactionId;
+    set p_result = 0;
+    commit;
+end$$
+delimiter ;
 
 /* Task 4: Transfer money */
 CREATE PROCEDURE transferMoney(
@@ -451,22 +484,35 @@ BEGIN
 END$$
 
 /* Task 14: Create Card for Account */
-CREATE PROCEDURE createCard(
-    IN p_cardNumber char(16), IN p_numberAccount varchar(10), IN p_pinCode varchar(64), IN p_ccv char(3), OUT p_result int
-)
-proc: BEGIN
-    DECLARE v_accountExists int default 0;
-    DECLARE exit handler for sqlexception BEGIN SET p_result = 2; END;
-    
-    SET p_result = 2;
-    SELECT count(*) INTO v_accountExists FROM ACCOUNTBANK WHERE numberAccount = p_numberAccount;
-    
-    IF v_accountExists = 0 THEN SET p_result = 1; LEAVE proc; END IF;
-    
-    INSERT INTO BANKCARDS (cardNumber, cardPinCodeHash, created_at, expire_at, secureCode, numberAccount)
-    VALUES (p_cardNumber, p_pinCode, curdate(), date_add(curdate(), interval 5 year), p_ccv, p_numberAccount);
-    SET p_result = 0;
-END$$
+delimiter $$
+create procedure createCard(
+    IN p_cardNumber char(16),
+    IN p_numberAccount varchar(10),
+    IN p_pinCode varchar(64),
+    IN p_ccv char(3),
+    OUT p_result int
+) # 0: success, 1: account not found, 2: server error
+proc: begin
+    declare v_accountExists int default 0;
+    declare exit handler for sqlexception
+    begin
+        set p_result = 2; -- server error
+    end;
+    set p_result = 2; -- default to server error
+    -- Kiểm tra tài khoản tồn tại
+    select count(*) into v_accountExists
+    from ACCOUNTBANK
+    where numberAccount = p_numberAccount;
+    if v_accountExists = 0 then
+        set p_result = 1; -- account not found
+        leave proc;
+    end if;
+    -- Tạo thẻ mới
+    insert into CARDS (cardNumber, cardPinCodeHash, created_at, expire_at, secureCode, numberAccount)
+    values (p_cardNumber, p_pinCode, curdate(), date_add(curdate(), interval 5 year), p_ccv, p_numberAccount);
+    set p_result = 0; -- success
+end$$
+delimiter ;
 
 /* Task 15: View Audit Logs */
 CREATE PROCEDURE viewAuditLogs(
