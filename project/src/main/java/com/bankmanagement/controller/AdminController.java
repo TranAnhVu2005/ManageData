@@ -10,7 +10,8 @@ import java.util.Map;
 
 /**
  * Xử lý nghiệp vụ quản trị dành cho Staff.
- * Đã được refactor sang chuẩn MVC (Model-View-Controller) và sử dụng AdminDAO chuyên biệt.
+ * Đã được refactor sang chuẩn MVC (Model-View-Controller) và sử dụng AdminDAO
+ * chuyên biệt.
  */
 public class AdminController {
 
@@ -59,10 +60,11 @@ public class AdminController {
             passHash = org.mindrot.jbcrypt.BCrypt.hashpw(pass, org.mindrot.jbcrypt.BCrypt.gensalt());
         }
 
-        String result = UserAccountsDAO.updateInfo(currentUser.getUserId(), name, null, null, phone, email, passHash);
+        String result = UserAccountsDAO.updateInfo(currentUser.getUserId(), name, null, phone, email, passHash);
         if ("Success".equals(result)) {
             view.showSuccess("Profile updated successfully!");
-            if (!name.isEmpty()) currentUser.setUserName(name);
+            if (!name.isEmpty())
+                currentUser.setUserName(name);
             AdminDAO.logStaffAction(currentUser.getUserId(), "Update Self Profile", "Changed basic info/password");
         } else {
             view.showError(result);
@@ -84,19 +86,21 @@ public class AdminController {
         double amount;
         try {
             amount = Double.parseDouble(input[1]);
-            if (amount <= 0) throw new NumberFormatException();
+            if (amount <= 0)
+                throw new NumberFormatException();
         } catch (NumberFormatException e) {
             view.showError("Invalid amount.");
             return;
         }
 
-        String transactionId = "D" + System.currentTimeMillis(); 
+        String transactionId = "D" + System.currentTimeMillis();
         int result = AdminDAO.depositMoney(currentUser.getUserId(), targetAccount, transactionId, amount);
 
         switch (result) {
             case 0 -> {
                 view.showSuccess("Deposit successful to " + targetAccount);
-                AdminDAO.logStaffAction(currentUser.getUserId(), "Deposit", "Amount: " + amount + " to " + targetAccount);
+                AdminDAO.logStaffAction(currentUser.getUserId(), "Deposit",
+                        "Amount: " + amount + " to " + targetAccount);
             }
             case 1 -> view.showError("Target account not found.");
             default -> view.showError("Transaction failed.");
@@ -105,7 +109,8 @@ public class AdminController {
 
     private void blockAccount() {
         String account = view.getAccountNumber("block");
-        if (account.isEmpty()) return;
+        if (account.isEmpty())
+            return;
         String result = AdminDAO.blockAccount(account);
         if ("Success".equals(result)) {
             view.showSuccess("Account " + account + " blocked.");
@@ -117,7 +122,8 @@ public class AdminController {
 
     private void unblockAccount() {
         String account = view.getAccountNumber("unblock");
-        if (account.isEmpty()) return;
+        if (account.isEmpty())
+            return;
         String result = AdminDAO.unblockAccount(account);
         if ("Success".equals(result)) {
             view.showSuccess("Account " + account + " unblocked.");
@@ -134,7 +140,8 @@ public class AdminController {
 
     private void searchCustomer() {
         String keyword = view.getSearchKeyword();
-        if (keyword.isEmpty()) return;
+        if (keyword.isEmpty())
+            return;
 
         String[] status = new String[1];
         List<Map<String, String>> users = AdminDAO.searchUser(keyword, status);
@@ -150,7 +157,8 @@ public class AdminController {
 
     private void viewAuditLogs() {
         String userId = view.getAuditLogUserId();
-        if (userId.isEmpty()) return;
+        if (userId.isEmpty())
+            return;
 
         String[] status = new String[1];
         List<Map<String, Object>> logs = AdminDAO.viewAuditLogs(userId, status);

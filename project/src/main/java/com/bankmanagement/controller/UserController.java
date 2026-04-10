@@ -226,7 +226,7 @@ public class UserController {
             hash = org.mindrot.jbcrypt.BCrypt.hashpw(input[3], org.mindrot.jbcrypt.BCrypt.gensalt());
         }
 
-        String res = UserAccountsDAO.updateInfo(currentUser.getUserId(), input[0], null, null, input[1], input[2],
+        String res = UserAccountsDAO.updateInfo(currentUser.getUserId(), input[0], null, input[1], input[2],
                 hash);
         if ("Success".equals(res)) {
             view.showSuccess("Profile updated.");

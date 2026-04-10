@@ -65,7 +65,10 @@ public class UserAccountsDAO {
         return false;
     }
 
-    /** Kiểm tra xem một giá trị đã tồn tại trong cột cụ thể của bảng hay chưa (Dùng cho random IDs). */
+    /**
+     * Kiểm tra xem một giá trị đã tồn tại trong cột cụ thể của bảng hay chưa (Dùng
+     * cho random IDs).
+     */
     public static boolean existedString(String tableName, String columnName, String value) {
         String sql = "SELECT 1 FROM " + tableName + " WHERE " + columnName + " = ?";
         try (Connection conn = dbConnection.getConnection();
@@ -107,22 +110,21 @@ public class UserAccountsDAO {
         return null;
     }
 
-    public static String updateInfo(String userID, String userName, String id,
+    public static String updateInfo(String userID, String userName,
             String birthDay, String numberPhone,
             String email, String newPasswordHash) {
-        String sql = "{call updateInfo(?,?,?,?,?,?,?,?)}";
+        String sql = "{call updateInfo(?,?,?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
                 CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, userID);
             cs.setString(2, nvl(userName));
-            cs.setString(3, nvl(id));
-            cs.setString(4, nvl(birthDay));
-            cs.setString(5, nvl(numberPhone));
-            cs.setString(6, nvl(email));
-            cs.setString(7, newPasswordHash); 
-            cs.registerOutParameter(8, Types.VARCHAR);
+            cs.setString(3, nvl(birthDay));
+            cs.setString(4, nvl(numberPhone));
+            cs.setString(5, nvl(email));
+            cs.setString(6, newPasswordHash);
+            cs.registerOutParameter(7, Types.VARCHAR);
             cs.execute();
-            return cs.getString(8);
+            return cs.getString(7);
         } catch (Exception e) {
             return "Error: " + e.getMessage();
         }
