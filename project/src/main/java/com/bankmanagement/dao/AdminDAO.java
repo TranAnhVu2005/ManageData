@@ -14,17 +14,18 @@ import java.util.Map;
 public class AdminDAO {
 
     /** Đăng tiền mặt vào tài khoản khách hàng (Nghiệp vụ do nhân viên thực hiện). */
-    public static int depositMoney(String staffId, String userAccount, String transactionId, double amount) {
-        String sql = "{call depositMoney(?,?,?,?,?)}";
+    public static int depositMoney(String staffId, String userAccount, String staffAccount, String transactionId, double amount) {
+        String sql = "{call depositMoney(?,?,?,?,?,?)}";
         try (Connection conn = dbConnection.getConnection();
                 CallableStatement cs = conn.prepareCall(sql)) {
             cs.setString(1, staffId);
             cs.setString(2, userAccount);
-            cs.setString(3, transactionId);
-            cs.setDouble(4, amount);
-            cs.registerOutParameter(5, Types.INTEGER);
+            cs.setString(3, staffAccount);
+            cs.setString(4, transactionId);
+            cs.setDouble(5, amount);
+            cs.registerOutParameter(6, Types.INTEGER);
             cs.execute();
-            return cs.getInt(5);
+            return cs.getInt(6);
         } catch (SQLException e) {
             System.err.println("[AdminDAO] Error depositing money: " + e.getMessage());
             return 2;

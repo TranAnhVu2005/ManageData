@@ -66,10 +66,12 @@ public class UserController {
         } else
             return;
 
-        String pin = view.enterPin("Set new 6-digit PIN");
-        if (!pin.matches("\\d{6}")) {
-            view.showError("PIN must be 6 digits!");
-            return;
+        String pin = null;
+        while (true) {
+            pin = view.enterPin("Set 6-digit Account PIN", true);
+            if (pin != null && pin.matches("\\d{6}"))
+                break;
+            view.showError("PIN must be 6 digits.");
         }
 
         String pinHash = org.mindrot.jbcrypt.BCrypt.hashpw(pin, org.mindrot.jbcrypt.BCrypt.gensalt());
@@ -137,13 +139,21 @@ public class UserController {
             return;
 
         BankAccount sel = accounts.get(idx);
-        String pin = view.enterPin("Enter Account PIN");
-        if (UserAccountsDAO.verifyAccountPin(sel.getNumberAccount(), pin)) {
-            Map<String, Object> res = UserAccountsDAO.getBalance(sel.getNumberAccount());
-            view.showSuccess("Current Balance: " + String.format("%,.2f", (Double) res.get("balance")) + " VND");
-        } else {
-            view.showError("Incorrect PIN.");
+        String pin = null;
+        while (true) {
+            pin = view.enterPin("Enter Account PIN");
+            if (!pin.matches("\\d{6}")) {
+                view.showError("PIN must be 6 digits.");
+                continue;
+            }
+            if (!UserAccountsDAO.verifyAccountPin(sel.getNumberAccount(), pin)) {
+                view.showError("Incorrect PIN.");
+                continue;
+            }
+            break;
         }
+        Map<String, Object> res = UserAccountsDAO.getBalance(sel.getNumberAccount());
+        view.showSuccess("Current Balance: " + String.format("%,.2f", (Double) res.get("balance")) + " VND");
     }
 
     private void transferMoney(List<BankAccount> accounts) {
@@ -260,17 +270,26 @@ public class UserController {
         BankAccount sel = accounts.get(idx);
         String pin = null;
         while (true) {
-            pin = view.enterPin("Set 6-digit Bank Account PIN");
-            if (pin.matches("\\d{6}"))
-                break;
-            view.showError("PIN must be 6 digits.");
+            pin = view.enterPin("Enter 6-digit Bank Account PIN");
+            if (pin == null) {
+                continue;
+            }
+            if (!pin.matches("\\d{6}")) {
+                view.showError("PIN must be 6 digits.");
+                continue;
+            }
+            if (!UserAccountsDAO.verifyAccountPin(sel.getNumberAccount(), pin)) {
+                view.showError("Incorrect Account PIN.");
+                continue;
+            }
+            break;
         }
 
         String cardNumber = function.generateStringRandom(16, "CARDS", "cardNumber", null);
         String cardPin = null;
         while (true) {
-            cardPin = view.enterPin("Set 6-digit Card PIN");
-            if (cardPin.matches("\\d{6}"))
+            cardPin = view.enterPin("Set 6-digit Card PIN", true);
+            if (cardPin != null && cardPin.matches("\\d{6}"))
                 break;
             view.showError("PIN must be 6 digits.");
         }
