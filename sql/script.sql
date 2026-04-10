@@ -666,8 +666,6 @@ delimiter ;
 /*End Task 12: Search user by phone or ID* - Vũ*/
 
 
-select * from useraccounts;
-
 /*Task 14 create card for account */
 delimiter $$
 create procedure createCard(

@@ -102,9 +102,8 @@ public class UserView {
         if (accounts.isEmpty()) return -1;
         System.out.println("\n--- " + title + " ---");
         for (int i = 0; i < accounts.size(); i++) {
-            System.out.printf("%d. %s (Balance: %s VND)%n", (i + 1), 
-                    accounts.get(i).getNumberAccount(), 
-                    String.format("%,.2f", accounts.get(i).getBalance()));
+            System.out.printf("%d. %s\n", (i + 1), 
+                    accounts.get(i).getNumberAccount());
         }
         System.out.println("0. Cancel");
         System.out.print("Choose account: ");
