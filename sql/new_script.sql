@@ -10,7 +10,6 @@ USE MANAGEBANKACCOUNT;
 -- 1. CREATING TABLES (Ordered by dependencies)
 -- =============================================================================
 
-select * from USERACCOUNTS;
 CREATE TABLE USERACCOUNTS (	
     userID varchar(10) primary key,
     userName varchar(200) not null,
@@ -71,7 +70,6 @@ CREATE TABLE USERAUDITLOGS (
     foreign key (userID) references USERACCOUNTS(userID) on update cascade on delete cascade
 );
 
-select * from STAFFAUDITLOGS;
 CREATE TABLE STAFFAUDITLOGS (
     logId int auto_increment primary key,
     staffID varchar(10) not null,
@@ -125,6 +123,7 @@ BEGIN
     END WHILE;
     RETURN rs;
 END$$
+DELIMITER ;
 
 DELIMITER $$
 
@@ -169,13 +168,13 @@ BEGIN
         VALUES (NEW.userID, 'Change Role', OLD.roleUser, NEW.roleUser);
     END IF;
 END$$
-select * from USERAUDITLOGS;
-
+DELIMITER ;
 -- =============================================================================
 -- 4. STORED PROCEDURES
 -- =============================================================================
 
 /* Task 1: Create account */
+DELIMITER $$
 CREATE PROCEDURE createUserAccount (
     IN p_userID varchar(10), IN p_userName varchar(200), IN p_ID char(12),
     IN p_passwordHash varchar(2000), IN p_birthday date, IN p_numberPhone varchar(15),
@@ -186,8 +185,10 @@ BEGIN
     INSERT INTO USERACCOUNTS VALUES (p_userID, p_userName, p_ID, p_passwordHash, p_birthday, p_numberPhone, p_email, p_roleUser);
     SET p_result = 'Success';
 END$$
+DELIMITER ;
 
 /* Task 2: Update account */
+DELIMITER $$
 CREATE PROCEDURE updateInfo(
     IN p_userID varchar(10), IN p_userName varchar(200),
     IN p_birthDay date, IN p_numberPhone varchar(15), IN p_email varchar(100),
@@ -207,6 +208,8 @@ BEGIN
     IF ROW_COUNT() > 0 THEN SET p_result = "Success";
     ELSE SET p_result = "Not found user or no changes made"; END IF;
 END$$
+DELIMITER ;
+
 
 /* Task 3: Withdraw money */
 delimiter $$
@@ -318,6 +321,8 @@ BEGIN
         SET p_result = "Success";
     END IF;
 END$$
+DELIMITER ;
+
 
 /* Task 5: Check balance */
 delimiter $$
@@ -353,10 +358,7 @@ proc: begin
 end$$
 delimiter ;
 
--- select * from useraccounts;
--- UPDATE USERACCOUNTS 
--- SET passWordHash = '$2a$10$.22Mp10PjLZ5q5lVZbMQMeN7u5tjrcTQWNlvrPpa2BTSpS215kF6C'
--- WHERE userID = 'U559559';
+
 /* Task 6: Check transaction */
 delimiter $$
 CREATE PROCEDURE checkTransaction(
@@ -372,6 +374,7 @@ BEGIN
         SET p_result = "Success";
     END IF;
 END$$
+DELIMITER ;
 
 /* Task 7: Deposit money */
 DROP PROCEDURE IF EXISTS depositMoney;
@@ -468,8 +471,11 @@ proc: BEGIN
     SET p_result = 0;
     COMMIT;
 END$$
+DELIMITER ;
+
 
 /* Task 10: Change Account PIN */
+DELIMITER $$
 CREATE PROCEDURE changeAccountPin(
     IN p_numberAccount varchar(10), IN p_newPinHash varchar(64), OUT p_result varchar(200)
 )
@@ -486,8 +492,10 @@ BEGIN
         SET p_result = "Success";
     END IF;
 END$$
+DELIMITER ;
 
 /* Task 11: Search transaction by date range */
+DELIMITER $$
 CREATE PROCEDURE searchTransactionByDate(
     IN p_numberAccount varchar(10), IN p_fromDate datetime, IN p_toDate datetime, OUT p_result varchar(200)
 )
@@ -505,6 +513,8 @@ BEGIN
         SET p_result = "Success";
     END IF;
 END$$
+DELIMITER ;
+
 
 /* Task 12: Search user by phone or ID */
 DELIMITER $$
@@ -536,9 +546,11 @@ BEGIN
         SET p_result = "Success";
     END IF;
 END$$
+DELIMITER ;
 
 
 /* Task 13: Unblock account */
+DELIMITER $$
 CREATE PROCEDURE unblockAccount(
     IN p_numberAccount varchar(10), OUT p_result varchar(200)
 )
@@ -553,6 +565,7 @@ BEGIN
         SET p_result = "Success";
     END IF;
 END$$
+DELIMITER ;
 
 /* Task 14: Create Card for Account */
 delimiter $$
