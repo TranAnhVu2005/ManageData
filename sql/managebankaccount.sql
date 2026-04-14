@@ -83,25 +83,11 @@ CREATE TABLE STAFFAUDITLOGS (
 -- =============================================================================
 -- 2. SEED DATA (Initial inserts)
 -- =============================================================================
-
 INSERT INTO TYPEOFTRANSACTION VALUES 
 ('W001', 'Rút tiền', 'Khách hàng rút tiền từ tài khoản'),
 ('T001', 'Chuyển tiền', 'Chuyển tiền giữa các tài khoản'),
 ('D001', 'Nạp tiền', 'Nạp tiền vào tài khoản');
 
-INSERT INTO USERACCOUNTS (userID, userName, ID, passWordHash, birthDay, numberPhone, email, roleUser)
-VALUES (
-    'STAFF00001', 'Van Teo', '111111111111', 
-    '$2a$10$BuHGpV5BogFkqHpYz0H0sO2unKxmx/cLqd2EDM4VI.g7v.Zk2fYYq', #password: 123456
-    '2000-12-12', '0123456789', 'vanteo@gmail.com', 'Staff'
-);
-
-INSERT INTO ACCOUNTBANK (numberAccount, userID, pinCodeHash, balance)
-VALUES (
-    '0000000001', 'STAFF00001', 
-    '$2a$10$BuHGpV5BogFkqHpYz0H0sO2unKxmx/cLqd2EDM4VI.g7v.Zk2fYYq', 
-    0
-);
 
 -- =============================================================================
 -- 3. FUNCTIONS & TRIGGERS
@@ -526,7 +512,7 @@ END$$
 DELIMITER ;
 
 
-/* Task 12: Search user by phone or ID */
+/* Task 12: Search user by phone or ID  */
 DELIMITER $$
 CREATE PROCEDURE searchUser(
     IN p_keyword varchar(100), OUT p_result varchar(200)
@@ -686,3 +672,24 @@ END$$
 
 DELIMITER ;
 
+
+INSERT INTO USERACCOUNTS (userID, userName, ID, passWordHash, birthDay, numberPhone, email, roleUser)
+VALUES (
+    'U792501', 'Nguyen Huy Loi', '012345678910', 
+    '$2a$10$fmr8FEpYcdDEGMRpG7AVAuZCjmckmXQc7lHRvs.4fSSReaG/jeC5y', #password: 12345678
+    '2005-01-01', '0123456789', 'loi@gmail.com', 'Staff'
+);
+
+INSERT INTO ACCOUNTBANK (numberAccount, userID, pinCodeHash, balance)
+VALUES (
+    '0000000001', 'U792501', 
+    '$2a$10$fmr8FEpYcdDEGMRpG7AVAuZCjmckmXQc7lHRvs.4fSSReaG/jeC5y', 
+    0
+);
+
+INSERT INTO USERACCOUNTS (userID, userName, ID, passWordHash, birthDay, numberPhone, email, roleUser)
+VALUES (
+    'U621122', 'Tran Anh Vu', '089205017243', 
+    '$2a$10$WA5x7U1p3BqG5L2BcM37OuN53yrYPU5oaTMp.KYmfQUd6J82FR4Ka', #password: 12345678
+    '2005-01-14', '0359906510', 'trananhvu314159@gmail.com', 'Client'
+);
